@@ -22,22 +22,24 @@ export function formatMoney(
   }
 
   if (compact) {
+    if (num === 0) return 'Rp0';
     if (Math.abs(num) >= 1_000_000_000_000) {
-      return `Rp${(num / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} T`;
+      return `Rp${(num / 1_000_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })}\u00A0T`;
     }
     if (Math.abs(num) >= 1_000_000_000) {
-      return `Rp${(num / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })} M`;
+      return `Rp${(num / 1_000_000_000).toLocaleString('id-ID', { maximumFractionDigits: 2 })}\u00A0M`;
     }
     if (Math.abs(num) >= 1_000_000) {
-      return `Rp${(num / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} Jt`;
+      return `Rp${(num / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 1 })}\u00A0Jt`;
     }
   }
 
-  return new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-  }).format(num);
+  return (
+    'Rp' +
+    new Intl.NumberFormat('id-ID', {
+      maximumFractionDigits: 0,
+    }).format(num)
+  );
 }
 
 export function formatDateTimeId(iso: string | null | undefined): string {
@@ -55,7 +57,7 @@ export function formatDateTimeId(iso: string | null | undefined): string {
       hour: '2-digit',
       minute: '2-digit',
     }) +
-    ' WIB'
+    '\u00A0WIB'
   );
 }
 
@@ -82,7 +84,7 @@ export function getSlaRemainingLabel(deadlineIso: string, status: string, lang: 
     };
   }
   return {
-    text: lang === 'ID' ? `Sisa ${hours} jam ${mins} mnt` : `${hours}h ${mins}m remaining`,
+    text: lang === 'ID' ? `Sisa ${hours}j ${mins}m` : `${hours}h ${mins}m remaining`,
     tone: 'ok',
   };
 }
@@ -94,6 +96,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '1. Lead & Inquiry',
     labelEn: '1. RFQ / Lead Intake',
     color: 'border-slate-300 bg-slate-100 text-slate-800',
+    accent: 'bg-slate-500',
   },
   {
     code: 'AANWIJZING_SURVEY',
@@ -101,6 +104,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '2. Survey Lokasi & NUP',
     labelEn: '2. Site Survey / Aanwijzing',
     color: 'border-sky-300 bg-sky-50 text-sky-900',
+    accent: 'bg-sky-500',
   },
   {
     code: 'PROPOSAL_BOQ',
@@ -108,6 +112,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '3. Simulasi & Reservasi',
     labelEn: '3. Technical Proposal & BoQ',
     color: 'border-indigo-300 bg-indigo-50 text-indigo-900',
+    accent: 'bg-indigo-600',
   },
   {
     code: 'NEGOSIASI',
@@ -115,6 +120,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '4. Booking Fee',
     labelEn: '4. Negotiation / Booking',
     color: 'border-amber-300 bg-amber-50 text-amber-900',
+    accent: 'bg-amber-500',
   },
   {
     code: 'SPK_KONTRAK',
@@ -122,6 +128,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '5. PPJB / Akad Kredit',
     labelEn: '5. Contract / SPK / PPJB',
     color: 'border-blue-300 bg-blue-50 text-blue-900',
+    accent: 'bg-blue-600',
   },
   {
     code: 'BAST_HANDOVER',
@@ -129,6 +136,7 @@ export const PIPELINE_STAGES = [
     labelMpc: '6. BAST Kawasan / Unit',
     labelEn: '6. Digital BAST & Retention',
     color: 'border-emerald-300 bg-emerald-50 text-emerald-900',
+    accent: 'bg-emerald-600',
   },
 ];
 

@@ -1,0 +1,146 @@
+{
+  "name": "Orchestrate Enterprise CRM WABA Lead, Approval Escalation & SLA Alerts",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "### Stage 1: Inbound Event & Validation\nValidates CRM / WABA webhook payload before branching.",
+        "height": 272,
+        "width": 520,
+        "color": 4
+      },
+      "id": "sticky-stage-1",
+      "name": "Sticky Stage 1",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [180, 140]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "mpc-epc-crm-events",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "node-webhook",
+      "name": "Receive CRM or WABA Event",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [220, 240],
+      "webhookId": "mpc-epc-crm-events"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "cond-event-type",
+              "leftValue": "={{ $('Receive CRM or WABA Event').item.json.body.eventType }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "node-validate",
+      "name": "Check Payload Schema",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [460, 240]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"validation_error\",\n  \"message\": \"Missing required body.eventType (LEAD_WABA | QUOTE_APPROVAL_SLA | BAST_RETENTION_ALERT)\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "id": "node-respond-400",
+      "name": "Respond 400 Invalid Payload",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [720, 420]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ ($vars.CRM_BASE_URL || 'http://localhost:3000') + '/api/crm/webhooks/n8n' }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"eventType\": {{ JSON.stringify($('Receive CRM or WABA Event').item.json.body.eventType) }},\n  \"entityRef\": {{ JSON.stringify($('Receive CRM or WABA Event').item.json.body.entityRef || 'AUTO-REF') }},\n  \"dispatchedAt\": {{ JSON.stringify(DateTime.now().setZone('Asia/Jakarta').toISO()) }},\n  \"payload\": {{ JSON.stringify($('Receive CRM or WABA Event').item.json.body.payload || {}) }}\n}",
+        "options": {
+          "timeout": 15000
+        }
+      },
+      "id": "node-post-crm",
+      "name": "Sync Event to Enterprise CRM API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [740, 200],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 5000,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"ok\": true,\n  \"workflow\": \"mpc-epc-crm-events\",\n  \"crmResult\": {{ JSON.stringify($('Sync Event to Enterprise CRM API').item.json) }}\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "id": "node-respond-200",
+      "name": "Respond 200 Synced",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1020, 160]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"error\": \"upstream_error\",\n  \"message\": \"Enterprise CRM webhook call failed after retries.\"\n}",
+        "options": {
+          "responseCode": 502
+        }
+      },
+      "id": "node-respond-502",
+      "name": "Respond 502 Upstream Failure",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1020, 320]
+    }
+  ],
+  "connections": {
+    "Receive CRM or WABA Event": {
+      "main": [[{ "node": "Check Payload Schema", "type": "main", "index": 0 }]]
+    },
+    "Check Payload Schema": {
+      "main": [
+        [{ "node": "Sync Event to Enterprise CRM API", "type": "main", "index": 0 }],
+        [{ "node": "Respond 400 Invalid Payload", "type": "main", "index": 0 }]
+      ]
+    },
+    "Sync Event to Enterprise CRM API": {
+      "main": [
+        [{ "node": "Respond 200 Synced", "type": "main", "index": 0 }],
+        [{ "node": "Respond 502 Upstream Failure", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Asia/Jakarta"
+  }
+}

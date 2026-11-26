@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useMemo, useState } from 'react';
-import { Search, X, Briefcase, Building2, FileCheck2, Receipt, FileText } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, X, Briefcase, Building2, FileCheck2, Receipt, FileText, Workflow } from 'lucide-react';
 
 export interface SearchableItem {
   id: string;
-  category: 'DEAL' | 'ACCOUNT' | 'CONTRACT' | 'INVOICE' | 'DOC';
+  category: 'DEAL' | 'ACCOUNT' | 'CONTRACT' | 'INVOICE' | 'DOC' | 'WORKFLOW';
   code: string;
   title: string;
   subtitle: string;
@@ -21,6 +21,19 @@ interface CommandModalProps {
 
 export function CommandModal({ open, onClose, items, onSelect }: CommandModalProps) {
   const [query, setQuery] = useState('');
+
+  // Close cleanly on Escape key (Fixes QC Finding #7)
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open, onClose]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -47,6 +60,8 @@ export function CommandModal({ open, onClose, items, onSelect }: CommandModalPro
         return <FileCheck2 className="h-4 w-4 text-emerald-600" />;
       case 'INVOICE':
         return <Receipt className="h-4 w-4 text-amber-600" />;
+      case 'WORKFLOW':
+        return <Workflow className="h-4 w-4 text-violet-600" />;
       default:
         return <FileText className="h-4 w-4 text-slate-600" />;
     }
@@ -65,15 +80,18 @@ export function CommandModal({ open, onClose, items, onSelect }: CommandModalPro
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3.5">
-          <Search className="h-5 w-5 text-slate-400" />
+          <Search className="h-5 w-5 shrink-0 text-slate-400" />
           <input
             autoFocus
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari proyek EPC/MPC, akun BUMN/Tbk, nomor SPK/PPJB, invoice VA, atau dokumen (Ctrl+K)..."
+            placeholder="Cari proyek EPC/MPC, akun BUMN/Tbk, nomor SPK/PPJB, VA, workflow, atau dokumen..."
             className="w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none"
           />
+          <kbd className="hidden rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-500 sm:inline-block">
+            ESC
+          </kbd>
           <button
             type="button"
             onClick={onClose}
@@ -100,19 +118,21 @@ export function CommandModal({ open, onClose, items, onSelect }: CommandModalPro
                 }}
                 className="flex w-full items-center justify-between gap-4 px-4 py-3 text-left transition hover:bg-blue-50/60"
               >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
+                <div className="flex min-w-0 flex-1 items-center gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50">
                     {iconFor(item.category)}
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold text-blue-700">{item.code}</span>
-                      <span className="text-sm font-medium text-slate-900">{item.title}</span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="shrink-0 whitespace-nowrap font-mono text-xs font-semibold text-blue-700">
+                        {item.code}
+                      </span>
+                      <span className="truncate text-sm font-semibold text-slate-900">{item.title}</span>
                     </div>
-                    <p className="text-xs text-slate-500">{item.subtitle}</p>
+                    <p className="truncate text-xs text-slate-500">{item.subtitle}</p>
                   </div>
                 </div>
-                <span className="rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">
                   {item.category}
                 </span>
               </button>

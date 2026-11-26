@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useTransition } from 'react';
+import dynamic from 'next/dynamic';
 import {
   LayoutDashboard,
   MessageSquareMore,
@@ -9,17 +10,22 @@ import {
   Receipt,
   ShieldAlert,
   FileText,
+  Workflow,
   Search,
   Database,
   Bell,
   ChevronLeft,
   ChevronRight,
+  Menu,
+  X,
   Plus,
   CheckCircle2,
   ArrowRight,
   Globe2,
   Sparkles,
   RefreshCw,
+  GripVertical,
+  Layers,
 } from 'lucide-react';
 import { ROLE_PROFILES, UserRole } from '@/lib/governance';
 import {
@@ -30,12 +36,28 @@ import {
   PIPELINE_STAGES,
 } from '@/lib/formatters';
 import { CommandModal, SearchableItem } from './CommandModal';
-import { CorporateDocsPanel } from './CorporateDocsPanel';
-import {
-  AccountsKycContractsView,
-  BillingAndBastView,
-  SlaAndGovernanceView,
-} from './OperationsPanels';
+
+// Vercel React Best Practices: Dynamic imports for secondary modules
+const CorporateDocsPanel = dynamic(
+  () => import('./CorporateDocsPanel').then((m) => m.CorporateDocsPanel),
+  { ssr: false }
+);
+const WorkflowHubPanel = dynamic(
+  () => import('./WorkflowHubPanel').then((m) => m.WorkflowHubPanel),
+  { ssr: false }
+);
+const AccountsKycContractsView = dynamic(
+  () => import('./OperationsPanels').then((m) => m.AccountsKycContractsView),
+  { ssr: false }
+);
+const BillingAndBastView = dynamic(
+  () => import('./OperationsPanels').then((m) => m.BillingAndBastView),
+  { ssr: false }
+);
+const SlaAndGovernanceView = dynamic(
+  () => import('./OperationsPanels').then((m) => m.SlaAndGovernanceView),
+  { ssr: false }
+);
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -46,23 +68,30 @@ type ActiveTab =
   | 'accounts'
   | 'billing'
   | 'governance'
+  | 'workflows'
   | 'docs';
 
-export function EnterpriseCrmApp() {
+export function EnterpriseCrmApp({ canvaUrl }: { canvaUrl?: string }) {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [role, setRole] = useState<UserRole>('DIREKSI');
   const [lang, setLang] = useState<Lang>('ID');
   const [currency, setCurrency] = useState<DisplayCurrency>('IDR');
   const [commandOpen, setCommandOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isPending, startTransition] = useTransition();
   const [data, setData] = useState<any>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; msg: string } | null>(null);
+
+  // Drag-and-drop Kanban state
+  const [draggedDealId, setDraggedDealId] = useState<number | null>(null);
+  const [dragOverStage, setDragOverStage] = useState<string | null>(null);
 
   // Leads state
   const [channelFilter, setChannelFilter] = useState<string>('ALL');
   const [leadName, setLeadName] = useState('');
-  const [leadTitle, setLeadTitle] = useState('VP Procurement & EPC');
+  const [leadTitle, setLeadTitle] = useState('VP Procurement');
   const [leadCompany, setLeadCompany] = useState('');
   const [leadEmail, setLeadEmail] = useState('');
   const [leadPhone, setLeadPhone] = useState('+62812');
@@ -80,8 +109,6 @@ export function EnterpriseCrmApp() {
   const [dealAccountId, setDealAccountId] = useState('');
   const [dealMode, setDealMode] = useState<'EPC_B2B' | 'MPC_PROPERTI'>('EPC_B2B');
   const [dealValue, setDealValue] = useState('42000000000');
-  const [dealCity, setDealCity] = useState('Surabaya');
-  const [dealProvince, setDealProvince] = useState('Jawa Timur (WIB)');
 
   const notify = useCallback((type: 'ok' | 'err', msg: string) => {
     setToast({ type, msg });
@@ -105,7 +132,6 @@ export function EnterpriseCrmApp() {
     fetchBootstrap();
   }, [fetchBootstrap]);
 
-  // Ctrl+K Global Command Search shortcut
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -164,19 +190,19 @@ export function EnterpriseCrmApp() {
     }
     items.push(
       {
-        id: 'doc-prd',
-        category: 'DOC',
-        code: 'MPC/IT-PMO/PRD/CRM-APP/2026/001',
-        title: 'Product Requirements Document (PRD)',
-        subtitle: 'Dokumen Standar Korporasi Besar Indonesia',
-        targetTab: 'docs',
+        id: 'wf-hub',
+        category: 'WORKFLOW',
+        code: 'N8N-FIGJAM-HUB',
+        title: 'Pusat Orkestrasi Workflow n8n & Arsitektur FigJam',
+        subtitle: 'Otomasi WABA, Eskalasi SLA Approval, SNAP BI & BAST',
+        targetTab: 'workflows',
       },
       {
         id: 'doc-bast',
         category: 'DOC',
         code: 'MPC/LEGAL-IT/BAST/CRM-APP/2026/001',
         title: 'Template Berita Acara Serah Terima (BA-UAT / BAST)',
-        subtitle: 'Instrumen Hukum Go-Live & Pencairan Termin',
+        subtitle: 'Studio Cetak Kertas A4 Resmi Korporasi',
         targetTab: 'docs',
       }
     );
@@ -231,16 +257,16 @@ export function EnterpriseCrmApp() {
     }
   }
 
-  async function handleAdvanceDealStage(deal: any, nextStage: string) {
+  async function handleAdvanceDealStage(dealId: number, dealCode: string, nextStage: string) {
     try {
       const res = await fetch('/api/crm/deals', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ actorRole: role, dealId: deal.id, stage: nextStage }),
+        body: JSON.stringify({ actorRole: role, dealId, stage: nextStage }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
-      notify('ok', `Proyek ${deal.deal_code} dipindahkan ke tahap ${nextStage}.`);
+      notify('ok', `Proyek ${dealCode} dipindahkan ke tahap ${nextStage}.`);
       await fetchBootstrap();
     } catch (err: any) {
       notify('err', err.message);
@@ -276,8 +302,8 @@ export function EnterpriseCrmApp() {
           pipelineMode: dealMode,
           stage: 'RFQ_TENDER',
           estimatedValue: Number(dealValue),
-          locationCity: dealCity,
-          provinceRegion: dealProvince,
+          locationCity: 'Surabaya',
+          provinceRegion: 'Jawa Timur (WIB)',
         }),
       });
       const json = await res.json();
@@ -307,75 +333,102 @@ export function EnterpriseCrmApp() {
     }
   }
 
-  const navItems: { id: ActiveTab; labelId: string; labelEn: string; icon: React.ReactNode; badge?: number }[] = [
+  const navItems: {
+    id: ActiveTab;
+    labelId: string;
+    labelEn: string;
+    icon: React.ReactNode;
+    badge?: number;
+  }[] = [
     {
       id: 'dashboard',
       labelId: 'Executive Command',
       labelEn: 'Executive Command',
-      icon: <LayoutDashboard className="h-4 w-4" />,
+      icon: <LayoutDashboard className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'leads',
       labelId: 'Leads & Omnichannel',
       labelEn: 'Leads & Omnichannel',
-      icon: <MessageSquareMore className="h-4 w-4" />,
+      icon: <MessageSquareMore className="h-4 w-4 shrink-0" />,
       badge: data?.kpis?.totalLeads,
     },
     {
       id: 'pipeline',
-      labelId: 'Deals & Pipeline EPC/MPC',
-      labelEn: 'EPC/MPC Project Pipeline',
-      icon: <Kanban className="h-4 w-4" />,
+      labelId: 'Pipeline EPC & MPC',
+      labelEn: 'EPC & MPC Pipeline',
+      icon: <Kanban className="h-4 w-4 shrink-0" />,
       badge: data?.kpis?.totalDeals,
     },
     {
       id: 'accounts',
       labelId: 'KYC, CPQ & Kontrak',
       labelEn: 'KYC, CPQ & Contracts',
-      icon: <Building2 className="h-4 w-4" />,
+      icon: <Building2 className="h-4 w-4 shrink-0" />,
       badge: data?.kpis?.pendingApprovalsCount || undefined,
     },
     {
       id: 'billing',
       labelId: 'Termin, VA & BAST',
-      labelEn: 'Billing, VA & Digital BAST',
-      icon: <Receipt className="h-4 w-4" />,
+      labelEn: 'Billing, VA & BAST',
+      icon: <Receipt className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'governance',
-      labelId: 'SLA Retensi & Audit ISO',
-      labelEn: 'Retention SLA & Audit Log',
-      icon: <ShieldAlert className="h-4 w-4" />,
+      labelId: 'SLA Retensi & Audit',
+      labelEn: 'Retention SLA & Audit',
+      icon: <ShieldAlert className="h-4 w-4 shrink-0" />,
       badge: data?.kpis?.openSlaTicketsCount || undefined,
+    },
+    {
+      id: 'workflows',
+      labelId: 'Workflow n8n & FigJam',
+      labelEn: 'n8n & FigJam Workflows',
+      icon: <Workflow className="h-4 w-4 shrink-0" />,
     },
     {
       id: 'docs',
       labelId: 'Dokumen Korporasi',
-      labelEn: 'Corporate SDLC Docs',
-      icon: <FileText className="h-4 w-4" />,
+      labelEn: 'Corporate A4 Docs',
+      icon: <FileText className="h-4 w-4 shrink-0" />,
     },
   ];
 
+  const selectTab = (tab: ActiveTab) => {
+    setMobileMenuOpen(false);
+    startTransition(() => {
+      setActiveTab(tab);
+    });
+  };
+
   return (
     <div className="flex min-h-screen bg-slate-50 text-slate-900">
-      {/* Collapsible Enterprise Sidebar */}
+      {/* Mobile / Tablet Slide-Over Backdrop (Fixes 768x1024 Tablet QC Bug #3!) */}
+      {mobileMenuOpen && (
+        <div
+          className="no-print fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Precision w-64 Desktop Sidebar + Responsive Mobile/Tablet Drawer (Fixes w-68 Bug #1!) */}
       <aside
-        className={`no-print sticky top-0 flex h-screen shrink-0 flex-col border-r border-slate-800 bg-slate-950 text-slate-200 transition-all duration-200 ${
-          sidebarCollapsed ? 'w-20' : 'w-68'
-        }`}
+        className={`no-print fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-800 bg-slate-950 text-slate-200 transition-all duration-200 lg:sticky lg:top-0 lg:z-20 lg:h-screen lg:translate-x-0 ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        } ${sidebarCollapsed ? 'lg:w-20' : 'w-64'}`}
       >
         <div className="flex items-center justify-between border-b border-slate-800 px-4 py-4">
-          <div className="flex items-center gap-2.5 overflow-hidden">
+          <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 font-black text-white shadow">
               M
             </div>
             {!sidebarCollapsed && (
-              <div className="truncate">
+              <div className="min-w-0">
                 <p className="truncate text-xs font-extrabold tracking-wide text-white">
                   NUSANTARA MPC•EPC
                 </p>
                 <p className="truncate text-[10px] text-slate-400">
-                  Enterprise CRM • ISO 27001
+                  Enterprise CRM v2.0 • ISO 27001
                 </p>
               </div>
             )}
@@ -383,10 +436,18 @@ export function EnterpriseCrmApp() {
           <button
             type="button"
             onClick={() => setSidebarCollapsed((v) => !v)}
-            className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white"
+            className="hidden rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white lg:inline-flex"
             aria-label="Toggle Sidebar"
           >
             {sidebarCollapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="rounded-lg p-1 text-slate-400 hover:bg-slate-800 hover:text-white lg:hidden"
+            aria-label="Close Sidebar"
+          >
+            <X className="h-4 w-4" />
           </button>
         </div>
 
@@ -397,14 +458,14 @@ export function EnterpriseCrmApp() {
               <button
                 key={item.id}
                 type="button"
-                onClick={() => setActiveTab(item.id)}
-                className={`flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
+                onClick={() => selectTab(item.id)}
+                className={`flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold transition ${
                   active
                     ? 'bg-blue-600 text-white shadow-sm'
                     : 'text-slate-300 hover:bg-slate-900 hover:text-white'
                 }`}
               >
-                <span className="flex items-center gap-3 truncate">
+                <span className="flex min-w-0 items-center gap-2.5">
                   {item.icon}
                   {!sidebarCollapsed && (
                     <span className="truncate">{lang === 'ID' ? item.labelId : item.labelEn}</span>
@@ -412,7 +473,7 @@ export function EnterpriseCrmApp() {
                 </span>
                 {!sidebarCollapsed && item.badge !== undefined && item.badge > 0 && (
                   <span
-                    className={`rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
+                    className={`shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] font-bold ${
                       active ? 'bg-white/20 text-white' : 'bg-slate-800 text-blue-300'
                     }`}
                   >
@@ -425,12 +486,12 @@ export function EnterpriseCrmApp() {
         </nav>
 
         {!sidebarCollapsed && (
-          <div className="border-t border-slate-800 p-4 text-[11px] text-slate-400 space-y-1.5">
+          <div className="space-y-1.5 border-t border-slate-800 p-4 text-[11px] text-slate-400">
             <div className="flex items-center gap-1.5 font-semibold text-emerald-400">
-              <Database className="h-3.5 w-3.5" />
-              <span>Neon Postgres TLS 1.3</span>
+              <Database className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Neon Postgres TLS 1.3</span>
             </div>
-            <p className="leading-snug text-slate-400">
+            <p className="text-[10px] leading-relaxed text-slate-400">
               UU PDP No. 27/2022 • PERURI e-Meterai • PSrE Komdigi • Coretax DJP
             </p>
           </div>
@@ -440,19 +501,28 @@ export function EnterpriseCrmApp() {
       {/* Main Content Area */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Global Top Command Bar */}
-        <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-6 py-3 backdrop-blur">
+        <header className="no-print sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:px-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 lg:hidden"
+                aria-label="Open Navigation Menu"
+              >
+                <Menu className="h-4 w-4" />
+              </button>
+
               <button
                 type="button"
                 onClick={() => setCommandOpen(true)}
-                className="flex items-center gap-3 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2 text-xs text-slate-500 transition hover:border-blue-400 hover:bg-white sm:w-80"
+                className="flex h-9 items-center gap-2.5 rounded-xl border border-slate-300 bg-slate-50 px-3 text-xs text-slate-500 transition hover:border-blue-400 hover:bg-white sm:w-72"
               >
-                <Search className="h-4 w-4 text-slate-400" />
+                <Search className="h-4 w-4 shrink-0 text-slate-400" />
                 <span className="truncate">
-                  {lang === 'ID' ? 'Cari proyek, akun, SPK, VA...' : 'Search projects, KYC, SPK...'}
+                  {lang === 'ID' ? 'Cari proyek, KYC, SPK, VA...' : 'Search projects, KYC, SPK...'}
                 </span>
-                <kbd className="ml-auto rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600">
+                <kbd className="ml-auto hidden rounded border border-slate-300 bg-white px-1.5 py-0.5 font-mono text-[10px] font-semibold text-slate-600 sm:inline-block">
                   Ctrl+K
                 </kbd>
               </button>
@@ -460,28 +530,35 @@ export function EnterpriseCrmApp() {
               <button
                 type="button"
                 onClick={() => fetchBootstrap()}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50"
-                title="Sinkronisasi ulang dengan Neon PostgreSQL"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50"
+                title={lang === 'ID' ? 'Sinkronisasi Neon PostgreSQL' : 'Sync Neon PostgreSQL'}
               >
-                <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin text-blue-600' : ''}`} />
+                <RefreshCw
+                  className={`h-3.5 w-3.5 ${loading || isPending ? 'animate-spin text-blue-600' : ''}`}
+                />
               </button>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2.5">
-              {/* Role Switcher for Live RBAC Simulation */}
-              <div className="flex items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50/70 px-2.5 py-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-800">
-                  Simulasi Peran RBAC:
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Role Switcher with full ID/EN translation */}
+              <div className="flex h-9 items-center gap-2 rounded-xl border border-blue-200 bg-blue-50/70 px-3">
+                <span className="hidden text-[10px] font-bold uppercase tracking-wider text-blue-800 sm:inline">
+                  {lang === 'ID' ? 'Peran RBAC:' : 'RBAC Role:'}
                 </span>
                 <select
                   aria-label="Pilih Peran Pengguna RBAC"
                   value={role}
-                  onChange={(e) => setRole(e.target.value as UserRole)}
+                  onChange={(e) => {
+                    const nextRole = e.target.value as UserRole;
+                    startTransition(() => {
+                      setRole(nextRole);
+                    });
+                  }}
                   className="bg-transparent text-xs font-bold text-slate-900 focus:outline-none"
                 >
                   {(Object.keys(ROLE_PROFILES) as UserRole[]).map((rKey) => (
                     <option key={rKey} value={rKey}>
-                      {ROLE_PROFILES[rKey].labelId}
+                      {lang === 'ID' ? ROLE_PROFILES[rKey].labelId : ROLE_PROFILES[rKey].labelEn}
                     </option>
                   ))}
                 </select>
@@ -490,18 +567,28 @@ export function EnterpriseCrmApp() {
               {/* Approval Inbox Pill */}
               <button
                 type="button"
-                onClick={() => setActiveTab('accounts')}
-                className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-900 hover:bg-amber-100"
+                onClick={() => selectTab('accounts')}
+                className="inline-flex h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border border-amber-300 bg-amber-50 px-3 text-xs font-bold text-amber-900 hover:bg-amber-100"
               >
                 <Bell className="h-3.5 w-3.5 text-amber-700" />
                 <span>Approval: {data?.kpis?.pendingApprovalsCount ?? 0}</span>
+              </button>
+
+              {/* FigJam Quick Access Pill */}
+              <button
+                type="button"
+                onClick={() => selectTab('workflows')}
+                className="hidden h-9 items-center gap-1.5 whitespace-nowrap rounded-xl border border-indigo-200 bg-indigo-50 px-3 text-xs font-bold text-indigo-800 hover:bg-indigo-100 xl:inline-flex"
+              >
+                <Layers className="h-3.5 w-3.5 text-indigo-600" />
+                <span>n8n & FigJam</span>
               </button>
 
               {/* Currency Switcher */}
               <button
                 type="button"
                 onClick={() => setCurrency((c) => (c === 'IDR' ? 'USD' : 'IDR'))}
-                className="rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 font-mono text-xs font-bold text-slate-700 hover:bg-slate-50"
+                className="h-9 rounded-xl border border-slate-300 bg-white px-2.5 font-mono text-xs font-bold text-slate-700 hover:bg-slate-50"
               >
                 {currency}
               </button>
@@ -510,7 +597,7 @@ export function EnterpriseCrmApp() {
               <button
                 type="button"
                 onClick={() => setLang((l) => (l === 'ID' ? 'EN' : 'ID'))}
-                className="inline-flex items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
+                className="inline-flex h-9 items-center gap-1 rounded-xl border border-slate-300 bg-white px-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50"
               >
                 <Globe2 className="h-3.5 w-3.5 text-blue-600" />
                 {lang}
@@ -540,7 +627,7 @@ export function EnterpriseCrmApp() {
         )}
 
         {/* Main Workspace Body */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4 sm:p-6">
           {data && data.configured === false ? (
             <div className="mx-auto max-w-2xl rounded-2xl border border-amber-300 bg-amber-50 p-6 text-amber-950">
               <h2 className="text-base font-bold">Konfigurasi Environment Database Diperlukan</h2>
@@ -563,7 +650,7 @@ export function EnterpriseCrmApp() {
             </div>
           ) : (
             <>
-              {/* MODULE 1: EXECUTIVE COMMAND CENTER */}
+              {/* MODULE 1: EXECUTIVE COMMAND CENTER (v2.0 Polished) */}
               {activeTab === 'dashboard' && (
                 <div className="space-y-6">
                   <div className="flex flex-wrap items-end justify-between gap-4">
@@ -577,62 +664,64 @@ export function EnterpriseCrmApp() {
                           : 'Executive Command Center — Indonesian EPC & MPC Portfolio'}
                       </h1>
                     </div>
-                    <div className="text-right text-xs text-slate-500">
-                      Data Residency: <strong>ap-southeast-1 (TLS Encrypted)</strong> • Kepatuhan:{' '}
+                    <div className="text-xs text-slate-500">
+                      Data Residency: <strong>ap-southeast-1 (TLS 1.3)</strong> •{' '}
                       <strong>UU PDP & Coretax DJP</strong>
                     </div>
                   </div>
 
-                  {/* KPI Grid */}
+                  {/* Balanced 4-Card KPI Grid */}
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-slate-200 border-t-4 border-t-slate-900 bg-white p-5 shadow-sm">
                       <p className="text-xs font-semibold text-slate-500">
                         {lang === 'ID' ? 'Total Nilai Pipeline Aktif' : 'Total Active Pipeline'}
                       </p>
-                      <p className="mt-2 font-mono text-2xl font-black text-slate-900">
+                      <p className="mt-2 whitespace-nowrap font-mono text-2xl font-black tabular-nums text-slate-900">
                         {formatMoney(data.kpis.totalPipelineValue, currency, true)}
                       </p>
-                      <p className="mt-1 text-xs text-emerald-700 font-semibold">
-                        Weighted Forecast: {formatMoney(data.kpis.weightedForecastValue, currency, true)}
+                      <p className="mt-1.5 truncate text-xs font-semibold text-emerald-700">
+                        Forecast: {formatMoney(data.kpis.weightedForecastValue, currency, true)}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-slate-200 border-t-4 border-t-blue-600 bg-white p-5 shadow-sm">
                       <p className="text-xs font-semibold text-slate-500">
                         {lang === 'ID' ? 'Nilai Kontrak Terikat (SPK/PPJB)' : 'Signed Contract Value'}
                       </p>
-                      <p className="mt-2 font-mono text-2xl font-black text-blue-700">
+                      <p className="mt-2 whitespace-nowrap font-mono text-2xl font-black tabular-nums text-blue-700">
                         {formatMoney(data.kpis.contractedValue, currency, true)}
                       </p>
-                      <p className="mt-1 text-xs text-slate-500">
-                        e-Meterai PERURI & PSrE Terverifikasi
+                      <p className="mt-1.5 truncate text-xs text-slate-500">
+                        e-Meterai PERURI & PSrE Aktif
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-slate-200 border-t-4 border-t-emerald-600 bg-white p-5 shadow-sm">
                       <p className="text-xs font-semibold text-slate-500">
                         {lang === 'ID' ? 'Realisasi Kas Masuk (Termin PAID)' : 'Realized Cash Inflow'}
                       </p>
-                      <p className="mt-2 font-mono text-2xl font-black text-emerald-700">
+                      <p className="mt-2 whitespace-nowrap font-mono text-2xl font-black tabular-nums text-emerald-700">
                         {formatMoney(data.kpis.paidCashIn, currency, true)}
                       </p>
-                      <p className="mt-1 text-xs text-amber-700 font-semibold">
-                        Piutang Termin Aktif: {formatMoney(data.kpis.outstandingReceivables, currency, true)}
+                      <p className="mt-1.5 truncate text-xs font-semibold text-amber-700">
+                        Piutang: {formatMoney(data.kpis.outstandingReceivables, currency, true)}
                       </p>
                     </div>
 
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    <div className="flex flex-col justify-between rounded-2xl border border-slate-200 border-t-4 border-t-indigo-600 bg-white p-5 shadow-sm">
                       <p className="text-xs font-semibold text-slate-500">
                         {lang === 'ID' ? 'Kepatuhan KYC, Approval & SLA' : 'Governance & SLA Health'}
                       </p>
-                      <div className="mt-2 flex items-baseline gap-3">
-                        <span className="font-mono text-2xl font-black text-slate-900">
+                      <div className="mt-2 flex items-baseline gap-2.5">
+                        <span className="font-mono text-2xl font-black tabular-nums text-slate-900">
                           {data.kpis.verifiedAccounts}/{data.kpis.totalAccounts}
                         </span>
-                        <span className="text-xs font-semibold text-emerald-700">KYC Verified</span>
+                        <span className="whitespace-nowrap text-xs font-semibold text-emerald-700">
+                          KYC Verified
+                        </span>
                       </div>
-                      <p className="mt-1 text-xs text-slate-500">
-                        {data.kpis.pendingApprovalsCount} Pending Approval • {data.kpis.openSlaTicketsCount} Tiket SLA Aktif
+                      <p className="mt-1.5 truncate text-xs text-slate-500">
+                        {data.kpis.pendingApprovalsCount} Approval • {data.kpis.openSlaTicketsCount} SLA Aktif
                       </p>
                     </div>
                   </div>
@@ -640,16 +729,18 @@ export function EnterpriseCrmApp() {
                   {/* Funnel + Pending Approvals */}
                   <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-7">
-                      <div className="mb-4 flex items-center justify-between">
+                      <div className="mb-4 flex items-center justify-between gap-3">
                         <h2 className="text-sm font-bold text-slate-900">
-                          Distribusi Tahapan Proyek Nasional (EPC B2B & Kawasan MPC)
+                          {lang === 'ID'
+                            ? 'Distribusi Tahapan Proyek Nasional (EPC B2B & Kawasan MPC)'
+                            : 'National Project Stage Funnel (EPC B2B & MPC)'}
                         </h2>
                         <button
                           type="button"
-                          onClick={() => setActiveTab('pipeline')}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-blue-700 hover:underline"
+                          onClick={() => selectTab('pipeline')}
+                          className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-xs font-bold text-blue-700 hover:underline"
                         >
-                          Buka Kanban <ArrowRight className="h-3.5 w-3.5" />
+                          {lang === 'ID' ? 'Buka Kanban' : 'Open Kanban'} <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       </div>
 
@@ -668,18 +759,18 @@ export function EnterpriseCrmApp() {
                               : 0;
                           return (
                             <div key={st.code} className="space-y-1">
-                              <div className="flex items-center justify-between text-xs">
-                                <span className="font-semibold text-slate-800">
+                              <div className="flex items-center justify-between gap-3 text-xs">
+                                <span className="truncate font-semibold text-slate-800">
                                   {lang === 'ID' ? st.labelEpc : st.labelEn}{' '}
-                                  <span className="text-slate-400">({stageDeals.length} proyek)</span>
+                                  <span className="text-slate-400">({stageDeals.length})</span>
                                 </span>
-                                <span className="font-mono font-bold text-slate-900">
+                                <span className="shrink-0 whitespace-nowrap font-mono font-bold tabular-nums text-slate-900">
                                   {formatMoney(sumVal, currency, true)} ({pct}%)
                                 </span>
                               </div>
                               <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
                                 <div
-                                  className="h-full rounded-full bg-blue-600 transition-all"
+                                  className={`h-full rounded-full transition-all ${st.accent}`}
                                   style={{ width: `${Math.max(pct, stageDeals.length > 0 ? 6 : 0)}%` }}
                                 />
                               </div>
@@ -691,34 +782,40 @@ export function EnterpriseCrmApp() {
                       {/* Regional Footprint */}
                       <div className="mt-6 border-t border-slate-100 pt-4">
                         <h3 className="mb-2.5 text-xs font-bold uppercase tracking-wider text-slate-500">
-                          Sebaran Lokasi Proyek Strategis di Indonesia
+                          {lang === 'ID'
+                            ? 'Sebaran Lokasi Proyek Strategis di Indonesia'
+                            : 'Strategic Project Locations Across Indonesia'}
                         </h3>
-                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                           {(data.deals || []).slice(0, 6).map((d: any) => (
                             <div
                               key={d.id}
-                              className="rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs"
+                              className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs"
                             >
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-slate-900">{d.location_city}</span>
-                                <span className="font-mono text-[10px] font-bold text-blue-700">
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="truncate font-bold text-slate-900">{d.location_city}</span>
+                                <span className="shrink-0 whitespace-nowrap font-mono text-[10px] font-bold text-blue-700">
                                   Fisik {d.physical_progress}%
                                 </span>
                               </div>
-                              <p className="truncate text-[11px] text-slate-500">{d.project_name}</p>
+                              <p className="mt-0.5 line-clamp-1 text-[11px] text-slate-500" title={d.project_name}>
+                                {d.project_name}
+                              </p>
                             </div>
                           ))}
                         </div>
                       </div>
                     </div>
 
-                    {/* Executive Approval Inbox */}
+                    {/* Executive Approval Inbox (Fixes Header Gap & Orphan 'M' Wrapping!) */}
                     <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <h2 className="text-sm font-bold text-slate-900">
-                          Antrean Otorisasi Deviasi Harga / Termin
+                      <div className="mb-3.5 flex items-center justify-between gap-3">
+                        <h2 className="min-w-0 text-sm font-bold text-slate-900">
+                          {lang === 'ID'
+                            ? 'Antrean Otorisasi Deviasi Harga'
+                            : 'Tiered Price Deviation Approvals'}
                         </h2>
-                        <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-900">
+                        <span className="shrink-0 whitespace-nowrap rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-900">
                           SLA Berjenjang
                         </span>
                       </div>
@@ -729,29 +826,36 @@ export function EnterpriseCrmApp() {
                           .map((q: any) => (
                             <div
                               key={q.id}
-                              className="rounded-xl border border-amber-200 bg-amber-50/50 p-3.5"
+                              className="rounded-xl border border-amber-200 bg-amber-50/50 p-4"
                             >
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0 flex-1">
                                   <span className="font-mono text-[11px] font-bold text-amber-900">
                                     {q.quote_number} • Wajib Level {q.required_approval_level}
                                   </span>
-                                  <p className="mt-0.5 text-xs font-bold text-slate-900">
+                                  <p className="mt-0.5 text-xs font-bold leading-snug text-slate-900">
                                     {q.project_name}
                                   </p>
                                 </div>
-                                <span className="font-mono text-xs font-extrabold text-slate-900">
+                                <span className="shrink-0 whitespace-nowrap font-mono text-sm font-extrabold tabular-nums text-slate-900">
                                   {formatMoney(q.grand_total_gross, currency, true)}
                                 </span>
                               </div>
-                              <p className="mt-1 text-[11px] text-slate-600">
+                              <p className="mt-1.5 text-[11px] text-slate-600">
                                 Diskon {q.discount_pct}% • SLA {q.sla_hours} Jam • Oleh {q.requested_by}
                               </p>
-                              <div className="mt-2.5 flex items-center justify-end gap-2">
+                              <div className="mt-3 flex items-center justify-between gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => selectTab('workflows')}
+                                  className="text-[11px] font-semibold text-blue-700 hover:underline"
+                                >
+                                  Lihat Eskalasi n8n →
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => handleQuickApprove(q.id)}
-                                  className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1 text-xs font-bold text-white hover:bg-emerald-700"
+                                  className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-emerald-700"
                                 >
                                   <CheckCircle2 className="h-3.5 w-3.5" />
                                   Setujui Sekarang
@@ -773,19 +877,21 @@ export function EnterpriseCrmApp() {
                 </div>
               )}
 
-              {/* MODULE 2: OMNICHANNEL LEADS */}
+              {/* MODULE 2: OMNICHANNEL LEADS (Fixes Select Height & BANT Pinning!) */}
               {activeTab === 'leads' && (
                 <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
                   <form
                     onSubmit={handleAddLead}
                     className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-4"
                   >
-                    <h2 className="text-sm font-bold text-slate-900">
-                      Akuisisi Prospek Omnichannel & Validasi UU PDP
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Dilengkapi Auto-Deduplikasi email/nomor telepon & perhitungan Skor BANT otomatis.
-                    </p>
+                    <div>
+                      <h2 className="text-sm font-bold text-slate-900">
+                        Akuisisi Prospek Omnichannel & Validasi UU PDP
+                      </h2>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        Dilengkapi Auto-Deduplikasi email/nomor telepon & perhitungan Skor BANT otomatis.
+                      </p>
+                    </div>
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
@@ -796,7 +902,7 @@ export function EnterpriseCrmApp() {
                           value={leadName}
                           onChange={(e) => setLeadName(e.target.value)}
                           placeholder="Ir. Andi Wijaya"
-                          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                         />
                       </div>
                       <div>
@@ -805,7 +911,7 @@ export function EnterpriseCrmApp() {
                           type="text"
                           value={leadTitle}
                           onChange={(e) => setLeadTitle(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                         />
                       </div>
                     </div>
@@ -818,7 +924,7 @@ export function EnterpriseCrmApp() {
                         value={leadCompany}
                         onChange={(e) => setLeadCompany(e.target.value)}
                         placeholder="PT Pelabuhan Energi Timur"
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                        className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                       />
                     </div>
 
@@ -830,8 +936,8 @@ export function EnterpriseCrmApp() {
                           required
                           value={leadEmail}
                           onChange={(e) => setLeadEmail(e.target.value)}
-                          placeholder="andi@pelabuhan.co.id"
-                          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                          placeholder="andi@korporasi.id"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                         />
                       </div>
                       <div>
@@ -841,7 +947,7 @@ export function EnterpriseCrmApp() {
                           required
                           value={leadPhone}
                           onChange={(e) => setLeadPhone(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                         />
                       </div>
                     </div>
@@ -852,13 +958,13 @@ export function EnterpriseCrmApp() {
                         <select
                           value={leadChannel}
                           onChange={(e) => setLeadChannel(e.target.value)}
-                          className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                         >
-                          <option value="LPSE_TENDER">Portal e-Proc / Tender</option>
-                          <option value="WABA">WhatsApp Business API</option>
-                          <option value="WEB_PORTAL">Website Inquiry</option>
-                          <option value="EVENT_QR">QR Buku Tamu Expo</option>
-                          <option value="PARTNER_REF">Rujukan Mitra / Agen</option>
+                          <option value="LPSE_TENDER">Tender / LPSE</option>
+                          <option value="WABA">WhatsApp API</option>
+                          <option value="WEB_PORTAL">Web Portal</option>
+                          <option value="EVENT_QR">QR Expo</option>
+                          <option value="PARTNER_REF">Mitra / Agen</option>
                         </select>
                       </div>
                       <div>
@@ -866,10 +972,10 @@ export function EnterpriseCrmApp() {
                         <select
                           value={leadSegment}
                           onChange={(e) => setLeadSegment(e.target.value as 'EPC_B2B' | 'MPC_PROPERTI')}
-                          className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                         >
-                          <option value="EPC_B2B">Proyek EPC B2B</option>
-                          <option value="MPC_PROPERTI">Kawasan Terpadu MPC</option>
+                          <option value="EPC_B2B">EPC B2B</option>
+                          <option value="MPC_PROPERTI">Kawasan MPC</option>
                         </select>
                       </div>
                     </div>
@@ -882,7 +988,7 @@ export function EnterpriseCrmApp() {
                         type="number"
                         value={leadBudget}
                         onChange={(e) => setLeadBudget(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs"
+                        className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                       />
                     </div>
 
@@ -913,7 +1019,7 @@ export function EnterpriseCrmApp() {
 
                     <button
                       type="submit"
-                      className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white hover:bg-blue-800"
+                      className="h-10 w-full rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800"
                     >
                       Simpan Prospek & Hitung Skor BANT
                     </button>
@@ -944,10 +1050,10 @@ export function EnterpriseCrmApp() {
 
                     <div className="space-y-3">
                       {filteredLeads.map((l: any) => (
-                        <div key={l.id} className="rounded-xl border border-slate-200 p-4 hover:border-blue-300">
-                          <div className="flex flex-wrap items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-2">
+                        <div key={l.id} className="rounded-xl border border-slate-200 p-4 transition hover:border-blue-300">
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <span className="font-mono text-xs font-bold text-blue-700">
                                   {l.lead_code}
                                 </span>
@@ -965,11 +1071,12 @@ export function EnterpriseCrmApp() {
                                 {l.job_title} • {l.email} • {l.phone} • PIC AE: {l.assigned_ae}
                               </p>
                             </div>
-                            <div className="text-right">
-                              <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-extrabold text-emerald-800">
+
+                            <div className="shrink-0 text-right">
+                              <span className="inline-flex whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-0.5 font-mono text-xs font-extrabold text-emerald-800">
                                 BANT {l.bant_score}/100
                               </span>
-                              <p className="mt-1 font-mono text-xs font-bold text-slate-900">
+                              <p className="mt-1 whitespace-nowrap font-mono text-xs font-extrabold tabular-nums text-slate-900">
                                 {formatMoney(l.estimated_budget, currency, true)}
                               </p>
                             </div>
@@ -986,7 +1093,7 @@ export function EnterpriseCrmApp() {
                 </div>
               )}
 
-              {/* MODULE 3: HYBRID PIPELINE (KANBAN & TABLE) */}
+              {/* MODULE 3: HYBRID PIPELINE v2.0 (Spacious Horizontal Scroll + Drag-and-Drop!) */}
               {activeTab === 'pipeline' && (
                 <div className="space-y-5">
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
@@ -1020,7 +1127,7 @@ export function EnterpriseCrmApp() {
                             pipelineViewMode === 'KANBAN' ? 'bg-white text-blue-700 shadow-sm' : 'text-slate-600'
                           }`}
                         >
-                          Kanban Board
+                          Kanban Drag & Drop
                         </button>
                         <button
                           type="button"
@@ -1036,7 +1143,7 @@ export function EnterpriseCrmApp() {
                       <button
                         type="button"
                         onClick={() => setNewDealOpen((v) => !v)}
-                        className="inline-flex items-center gap-1.5 rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-800"
+                        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-700 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-800"
                       >
                         <Plus className="h-4 w-4" /> Proyek Baru
                       </button>
@@ -1046,45 +1153,56 @@ export function EnterpriseCrmApp() {
                   {newDealOpen && (
                     <form
                       onSubmit={handleCreateDeal}
-                      className="grid grid-cols-1 gap-3 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 sm:grid-cols-6"
+                      className="grid grid-cols-1 items-end gap-3 rounded-2xl border border-blue-200 bg-blue-50/50 p-4 sm:grid-cols-6"
                     >
-                      <input
-                        type="text"
-                        required
-                        value={dealProjectName}
-                        onChange={(e) => setDealProjectName(e.target.value)}
-                        placeholder="Nama Paket Proyek EPC / Lot MPC..."
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs sm:col-span-2"
-                      />
-                      <select
-                        value={dealAccountId}
-                        onChange={(e) => setDealAccountId(e.target.value)}
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
-                      >
-                        {(data.accounts || []).map((a: any) => (
-                          <option key={a.id} value={a.id}>
-                            {a.entity_name}
-                          </option>
-                        ))}
-                      </select>
-                      <select
-                        value={dealMode}
-                        onChange={(e) => setDealMode(e.target.value as 'EPC_B2B' | 'MPC_PROPERTI')}
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
-                      >
-                        <option value="EPC_B2B">EPC Konstruksi B2B</option>
-                        <option value="MPC_PROPERTI">Kawasan MPC</option>
-                      </select>
-                      <input
-                        type="number"
-                        value={dealValue}
-                        onChange={(e) => setDealValue(e.target.value)}
-                        placeholder="Nilai Proyek (IDR)"
-                        className="rounded-xl border border-slate-300 bg-white px-3 py-2 font-mono text-xs"
-                      />
+                      <div className="sm:col-span-2">
+                        <label className="block text-[11px] font-bold text-slate-600">Nama Proyek</label>
+                        <input
+                          type="text"
+                          required
+                          value={dealProjectName}
+                          onChange={(e) => setDealProjectName(e.target.value)}
+                          placeholder="Nama Paket Proyek EPC / Lot MPC..."
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600">Akun Klien</label>
+                        <select
+                          value={dealAccountId}
+                          onChange={(e) => setDealAccountId(e.target.value)}
+                          className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs"
+                        >
+                          {(data.accounts || []).map((a: any) => (
+                            <option key={a.id} value={a.id}>
+                              {a.entity_name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600">Vertikal</label>
+                        <select
+                          value={dealMode}
+                          onChange={(e) => setDealMode(e.target.value as 'EPC_B2B' | 'MPC_PROPERTI')}
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
+                        >
+                          <option value="EPC_B2B">EPC Konstruksi</option>
+                          <option value="MPC_PROPERTI">Kawasan MPC</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-600">Estimasi Nilai (IDR)</label>
+                        <input
+                          type="number"
+                          value={dealValue}
+                          onChange={(e) => setDealValue(e.target.value)}
+                          className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 font-mono text-xs"
+                        />
+                      </div>
                       <button
                         type="submit"
-                        className="rounded-xl bg-blue-700 px-4 py-2 text-xs font-bold text-white hover:bg-blue-800"
+                        className="h-10 rounded-xl bg-blue-700 px-4 text-xs font-bold text-white hover:bg-blue-800"
                       >
                         Simpan Proyek
                       </button>
@@ -1092,131 +1210,189 @@ export function EnterpriseCrmApp() {
                   )}
 
                   {pipelineViewMode === 'KANBAN' ? (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-6">
+                    <div className="flex items-start gap-4 overflow-x-auto pb-4">
                       {PIPELINE_STAGES.map((st, idx) => {
                         const cards = filteredDeals.filter(
                           (d: any) => normalizeStageForKanban(d.stage) === st.code
                         );
+                        const sumStage = cards.reduce(
+                          (s: number, d: any) => s + Number(d.estimated_value || 0),
+                          0
+                        );
                         const nextStage = PIPELINE_STAGES[idx + 1]?.code;
+                        const isDropTarget = dragOverStage === st.code;
+
                         return (
                           <div
                             key={st.code}
-                            className="flex flex-col rounded-2xl border border-slate-200 bg-slate-100/80 p-3"
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              setDragOverStage(st.code);
+                            }}
+                            onDragLeave={() => setDragOverStage(null)}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              setDragOverStage(null);
+                              if (draggedDealId) {
+                                const found = filteredDeals.find((x: any) => x.id === draggedDealId);
+                                if (found && normalizeStageForKanban(found.stage) !== st.code) {
+                                  handleAdvanceDealStage(found.id, found.deal_code, st.code);
+                                }
+                              }
+                              setDraggedDealId(null);
+                            }}
+                            className={`flex w-72 shrink-0 flex-col rounded-2xl border p-3 transition ${
+                              isDropTarget
+                                ? 'border-blue-500 bg-blue-50/70 ring-2 ring-blue-300'
+                                : 'border-slate-200 bg-slate-100/80'
+                            }`}
                           >
-                            <div className={`mb-3 rounded-xl border px-3 py-2 ${st.color}`}>
-                              <p className="text-xs font-extrabold">
-                                {pipelineModeFilter === 'MPC_PROPERTI' ? st.labelMpc : st.labelEpc}
-                              </p>
-                              <p className="mt-0.5 font-mono text-[11px] opacity-80">
-                                {cards.length} Proyek
+                            <div className={`mb-3 rounded-xl border px-3.5 py-2.5 ${st.color}`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <p className="truncate text-xs font-extrabold">
+                                  {pipelineModeFilter === 'MPC_PROPERTI' ? st.labelMpc : st.labelEpc}
+                                </p>
+                                <span className="shrink-0 rounded-full bg-white/80 px-2 py-0.5 font-mono text-[10px] font-bold">
+                                  {cards.length}
+                                </span>
+                              </div>
+                              <p className="mt-1 font-mono text-[11px] font-semibold tabular-nums opacity-85">
+                                {formatMoney(sumStage, currency, true)}
                               </p>
                             </div>
 
-                            <div className="space-y-2.5">
-                              {cards.map((d: any) => (
-                                <div
-                                  key={d.id}
-                                  className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-blue-400"
-                                >
-                                  <div className="flex items-center justify-between gap-1">
-                                    <span className="font-mono text-[10px] font-bold text-blue-700">
-                                      {d.deal_code}
-                                    </span>
-                                    <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">
-                                      {d.win_probability}%
-                                    </span>
+                            {cards.length === 0 ? (
+                              <div className="rounded-xl border border-dashed border-slate-300 bg-white/50 px-3 py-6 text-center text-[11px] text-slate-400">
+                                Tarik kartu proyek ke kolom ini
+                              </div>
+                            ) : (
+                              <div className="space-y-3">
+                                {cards.map((d: any) => (
+                                  <div
+                                    key={d.id}
+                                    draggable
+                                    onDragStart={() => setDraggedDealId(d.id)}
+                                    onDragEnd={() => {
+                                      setDraggedDealId(null);
+                                      setDragOverStage(null);
+                                    }}
+                                    className="cursor-grab rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm transition hover:border-blue-400 active:cursor-grabbing"
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="inline-flex items-center gap-1 whitespace-nowrap font-mono text-[11px] font-bold text-blue-700">
+                                        <GripVertical className="h-3.5 w-3.5 text-slate-300" />
+                                        {d.deal_code}
+                                      </span>
+                                      <span className="shrink-0 whitespace-nowrap rounded-full bg-slate-100 px-2 py-0.5 font-mono text-[10px] font-bold text-slate-700">
+                                        Win {d.win_probability}%
+                                      </span>
+                                    </div>
+
+                                    <h4 className="mt-1.5 text-xs font-bold leading-snug text-slate-900">
+                                      {d.project_name}
+                                    </h4>
+                                    <p className="mt-1 text-[11px] text-slate-500">
+                                      {d.account_name} • {d.location_city}
+                                    </p>
+
+                                    <div className="mt-2.5 flex items-center justify-between">
+                                      <span className="whitespace-nowrap font-mono text-sm font-extrabold tabular-nums text-slate-900">
+                                        {formatMoney(d.estimated_value, currency, true)}
+                                      </span>
+                                      <span className="rounded bg-indigo-50 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700">
+                                        {d.pipeline_mode === 'EPC_B2B' ? 'EPC' : 'MPC'}
+                                      </span>
+                                    </div>
+
+                                    <div className="mt-3 flex items-center justify-between gap-2 border-t border-slate-100 pt-2.5">
+                                      <span className="whitespace-nowrap text-[11px] font-semibold text-emerald-700">
+                                        Fisik: {d.physical_progress}%
+                                      </span>
+                                      {nextStage && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAdvanceDealStage(d.id, d.deal_code, nextStage)}
+                                          className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-lg bg-blue-50 px-2.5 py-1 text-[11px] font-bold text-blue-700 hover:bg-blue-100"
+                                        >
+                                          Majukan <ArrowRight className="h-3 w-3" />
+                                        </button>
+                                      )}
+                                    </div>
                                   </div>
-                                  <h4 className="mt-1 text-xs font-bold leading-snug text-slate-900">
-                                    {d.project_name}
-                                  </h4>
-                                  <p className="mt-0.5 text-[11px] text-slate-500">
-                                    {d.account_name} • {d.location_city}
-                                  </p>
-                                  <p className="mt-2 font-mono text-xs font-extrabold text-slate-900">
-                                    {formatMoney(d.estimated_value, currency, true)}
-                                  </p>
-                                  <div className="mt-2 flex items-center justify-between border-t border-slate-100 pt-2">
-                                    <span className="text-[10px] font-semibold text-emerald-700">
-                                      Fisik: {d.physical_progress}%
-                                    </span>
-                                    {nextStage && (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleAdvanceDealStage(d, nextStage)}
-                                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100"
-                                      >
-                                        Majukan <ArrowRight className="h-3 w-3" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
                     </div>
                   ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm overflow-x-auto">
+                    <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                       <table className="w-full text-left text-xs">
                         <thead>
                           <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
-                            <th className="pb-2.5 pr-3">Kode & Proyek</th>
-                            <th className="pb-2.5 pr-3">Klien & Lokasi</th>
-                            <th className="pb-2.5 pr-3">Tahap Saat Ini</th>
-                            <th className="pb-2.5 pr-3">Nilai Proyek</th>
-                            <th className="pb-2.5 pr-3">Progres Fisik Lapangan</th>
-                            <th className="pb-2.5 text-right">Update Cepat</th>
+                            <th className="pb-2.5 pr-4">Kode & Proyek</th>
+                            <th className="pb-2.5 pr-4">Klien & Lokasi</th>
+                            <th className="whitespace-nowrap pb-2.5 pr-4">Tahap</th>
+                            <th className="whitespace-nowrap pb-2.5 pr-4">Nilai Proyek</th>
+                            <th className="whitespace-nowrap pb-2.5 pr-4">Progres Fisik</th>
+                            <th className="whitespace-nowrap pb-2.5 text-right">Update Lapangan</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {filteredDeals.map((d: any) => (
-                            <tr key={d.id} className="hover:bg-slate-50">
-                              <td className="py-3 pr-3">
-                                <div className="font-mono text-[11px] font-bold text-blue-700">
-                                  {d.deal_code}
-                                </div>
-                                <div className="font-bold text-slate-900">{d.project_name}</div>
-                              </td>
-                              <td className="py-3 pr-3">
-                                <div>{d.account_name}</div>
-                                <div className="text-[11px] text-slate-500">
-                                  {d.location_city}, {d.province_region}
-                                </div>
-                              </td>
-                              <td className="py-3 pr-3 font-mono text-[11px] font-bold">{d.stage}</td>
-                              <td className="py-3 pr-3 font-mono font-bold">
-                                {formatMoney(d.estimated_value, currency, true)}
-                              </td>
-                              <td className="py-3 pr-3">
-                                <div className="flex items-center gap-2">
-                                  <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
-                                    <div
-                                      className="h-full bg-emerald-600"
-                                      style={{ width: `${d.physical_progress}%` }}
-                                    />
+                          {filteredDeals.map((d: any) => {
+                            const isComplete = Number(d.physical_progress) >= 100;
+                            return (
+                              <tr key={d.id} className="hover:bg-slate-50">
+                                <td className="py-3 pr-4">
+                                  <div className="font-mono text-[11px] font-bold text-blue-700">
+                                    {d.deal_code}
                                   </div>
-                                  <span className="font-mono text-[11px] font-bold">
-                                    {d.physical_progress}%
-                                  </span>
-                                </div>
-                              </td>
-                              <td className="py-3 text-right">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    handleUpdateDealProgress(
-                                      d.id,
-                                      Math.min(100, Number(d.physical_progress) + 15)
-                                    )
-                                  }
-                                  className="rounded-lg border border-slate-300 px-2.5 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100"
-                                >
-                                  +15% Progres
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
+                                  <div className="font-bold text-slate-900">{d.project_name}</div>
+                                </td>
+                                <td className="py-3 pr-4">
+                                  <div>{d.account_name}</div>
+                                  <div className="text-[11px] text-slate-500">
+                                    {d.location_city}, {d.province_region}
+                                  </div>
+                                </td>
+                                <td className="whitespace-nowrap py-3 pr-4 font-mono text-[11px] font-bold">
+                                  {d.stage}
+                                </td>
+                                <td className="whitespace-nowrap py-3 pr-4 font-mono font-bold tabular-nums">
+                                  {formatMoney(d.estimated_value, currency, true)}
+                                </td>
+                                <td className="whitespace-nowrap py-3 pr-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="h-2 w-24 overflow-hidden rounded-full bg-slate-200">
+                                      <div
+                                        className="h-full bg-emerald-600"
+                                        style={{ width: `${d.physical_progress}%` }}
+                                      />
+                                    </div>
+                                    <span className="font-mono text-[11px] font-bold tabular-nums">
+                                      {d.physical_progress}%
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="whitespace-nowrap py-3 text-right">
+                                  <button
+                                    type="button"
+                                    disabled={isComplete}
+                                    onClick={() =>
+                                      handleUpdateDealProgress(
+                                        d.id,
+                                        Math.min(100, Number(d.physical_progress) + 15)
+                                      )
+                                    }
+                                    className="whitespace-nowrap rounded-lg border border-slate-300 px-3 py-1 text-[11px] font-bold text-slate-700 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-45"
+                                  >
+                                    {isComplete ? 'Selesai 100%' : '+15% Progres'}
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
                         </tbody>
                       </table>
                     </div>
@@ -1260,7 +1436,18 @@ export function EnterpriseCrmApp() {
                 />
               )}
 
-              {/* MODULE 7: CORPORATE GOVERNANCE DOCS & TEMPLATES */}
+              {/* MODULE 7: WORKFLOW & CUSTOMIZATION HUB (n8n + FigJam + Canva) */}
+              {activeTab === 'workflows' && (
+                <WorkflowHubPanel
+                  activeRole={activeRoleProfile}
+                  lang={lang}
+                  canvaUrl={canvaUrl}
+                  notify={notify}
+                  onRefreshParent={fetchBootstrap}
+                />
+              )}
+
+              {/* MODULE 8: CORPORATE GOVERNANCE DOCS & A4 BAST STUDIO */}
               {activeTab === 'docs' && <CorporateDocsPanel />}
             </>
           )}
@@ -1272,7 +1459,7 @@ export function EnterpriseCrmApp() {
         open={commandOpen}
         onClose={() => setCommandOpen(false)}
         items={searchableItems}
-        onSelect={(tab) => setActiveTab(tab as ActiveTab)}
+        onSelect={(tab) => selectTab(tab as ActiveTab)}
       />
     </div>
   );

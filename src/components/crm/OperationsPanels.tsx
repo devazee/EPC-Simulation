@@ -60,13 +60,12 @@ export function AccountsKycContractsView({
   const [accountType, setAccountType] = useState('BUMN_KORPORASI');
   const [industrySector, setIndustrySector] = useState('Energi & Infrastruktur EPC');
   const [picName, setPicName] = useState('');
-  const [picRole, setPicRole] = useState('VP Procurement');
   const [picEmail, setPicEmail] = useState('');
   const [picPhone, setPicPhone] = useState('+62811');
   const [nik16, setNik16] = useState('');
   const [npwp16, setNpwp16] = useState('');
   const [nib13, setNib13] = useState('');
-  const [cityProvince, setCityProvince] = useState('Jakarta Selatan, DKI Jakarta (WIB)');
+  const [cityProvince, setCityProvince] = useState('Jakarta Selatan (WIB)');
   const [pdpAccountConsent, setPdpAccountConsent] = useState(true);
 
   // CPQ form state
@@ -118,7 +117,7 @@ export function AccountsKycContractsView({
           accountType,
           industrySector,
           picName,
-          picRole,
+          picRole: 'VP Procurement',
           picEmail,
           picPhone,
           nik16,
@@ -253,62 +252,62 @@ export function AccountsKycContractsView({
 
   return (
     <div className="space-y-6">
-      {/* Sub-navigation */}
+      {/* Clean Single-Row Sub-Navigation */}
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
             onClick={() => setSubTab('cpq')}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
               subTab === 'cpq'
                 ? 'bg-blue-700 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
             <Calculator className="h-4 w-4" />
-            {lang === 'ID'
-              ? 'CPQ, Pajak Coretax & Multi-Tier Approval'
-              : 'CPQ, Coretax Engine & Tiered Approval'}
+            {lang === 'ID' ? 'CPQ, Pajak Coretax & Approval' : 'CPQ, Coretax & Approval'}
           </button>
           <button
             type="button"
             onClick={() => setSubTab('kyc')}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
               subTab === 'kyc'
                 ? 'bg-blue-700 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
             <ShieldCheck className="h-4 w-4" />
-            {lang === 'ID' ? 'Brankas KYC & Masking UU PDP' : 'KYC Vault & PDP Masking'}
+            {lang === 'ID' ? 'Brankas KYC & UU PDP' : 'KYC Vault & UU PDP'}
           </button>
           <button
             type="button"
             onClick={() => setSubTab('contracts')}
-            className={`inline-flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-bold transition ${
               subTab === 'contracts'
                 ? 'bg-blue-700 text-white shadow-sm'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
             <FileSignature className="h-4 w-4" />
-            {lang === 'ID' ? 'Kontrak Digital, e-Meterai & PSrE' : 'Digital Contracts, e-Meterai & PSrE'}
+            {lang === 'ID' ? 'Kontrak Digital & e-Meterai' : 'Digital Contracts & PSrE'}
           </button>
         </div>
 
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+        <div className="flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
           {activeRole.canViewUnmaskedKyc ? (
             <>
               <Unlock className="h-3.5 w-3.5 text-emerald-600" />
               <span className="font-semibold text-emerald-800">
-                UU PDP Clearance Aktif (NIK/NPWP Penuh)
+                {lang === 'ID' ? 'UU PDP Clearance (NIK/NPWP Penuh)' : 'UU PDP Clearance (Unmasked)'}
               </span>
             </>
           ) : (
             <>
               <Lock className="h-3.5 w-3.5 text-amber-600" />
               <span className="font-semibold text-amber-800">
-                UU PDP Field Masking Aktif ({activeRole.role})
+                {lang === 'ID'
+                  ? `UU PDP Field Masking (${activeRole.role})`
+                  : `UU PDP Masked (${activeRole.role})`}
               </span>
             </>
           )}
@@ -320,14 +319,18 @@ export function AccountsKycContractsView({
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           <form
             onSubmit={handleCreateQuote}
-            className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5"
+            className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5"
           >
             <div className="border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900">
-                Generator Penawaran (CPQ / BoQ) & Pajak Coretax DJP
+                {lang === 'ID'
+                  ? 'Generator Penawaran (CPQ / BoQ) & Pajak Coretax DJP'
+                  : 'CPQ / BoQ Quote Builder & Coretax Engine'}
               </h3>
               <p className="mt-0.5 text-xs text-slate-500">
-                Otomatis menghitung PPN, PPh Konstruksi/Properti, dan level eskalasi diskon korporasi.
+                {lang === 'ID'
+                  ? 'Otomatis menghitung PPN, PPh Konstruksi/Properti, dan level eskalasi diskon korporasi.'
+                  : 'Automatically calculates VAT, Withholding Tax, and corporate discount escalation tiers.'}
               </p>
             </div>
 
@@ -336,7 +339,7 @@ export function AccountsKycContractsView({
               <select
                 value={dealId}
                 onChange={(e) => setDealId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+                className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs text-slate-900"
               >
                 {(data.deals || []).map((d: any) => (
                   <option key={d.id} value={d.id}>
@@ -355,7 +358,7 @@ export function AccountsKycContractsView({
                 required
                 value={boqSummary}
                 onChange={(e) => setBoqSummary(e.target.value)}
-                placeholder="Contoh: Paket Engineering, Procurement & Construction Gardu Induk + Retensi 5%..."
+                placeholder="Contoh: Paket EPC Gardu Induk 150kV + Retensi Jaminan 5%..."
                 className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
               />
             </div>
@@ -369,7 +372,7 @@ export function AccountsKycContractsView({
                   step={1000000}
                   value={subtotalDpp}
                   onChange={(e) => setSubtotalDpp(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
               <div>
@@ -381,7 +384,7 @@ export function AccountsKycContractsView({
                   step={0.5}
                   value={discountPct}
                   onChange={(e) => setDiscountPct(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
             </div>
@@ -392,21 +395,21 @@ export function AccountsKycContractsView({
                 <select
                   value={ppnRate}
                   onChange={(e) => setPpnRate(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                 >
-                  <option value={11}>PPN Efektif Umum (11%)</option>
-                  <option value={12}>PPN Tarif Baru / Barang Mewah (12%)</option>
+                  <option value={11}>PPN Umum (11%)</option>
+                  <option value={12}>PPN Tarif 12%</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Deviasi Jatuh Tempo (Hari)</label>
+                <label className="block text-xs font-semibold text-slate-700">Deviasi Termin (Hari)</label>
                 <input
                   type="number"
                   min={0}
                   max={90}
                   value={termDeviationDays}
                   onChange={(e) => setTermDeviationDays(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
             </div>
@@ -416,7 +419,7 @@ export function AccountsKycContractsView({
               <select
                 value={pphScheme}
                 onChange={(e) => setPphScheme(e.target.value as PphScheme)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs"
               >
                 {Object.entries(PPH_SCHEMES).map(([k, v]) => (
                   <option key={k} value={k}>
@@ -427,38 +430,40 @@ export function AccountsKycContractsView({
             </div>
 
             {/* Live Calculation Preview Box */}
-            <div className="rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs space-y-1.5">
-              <div className="flex justify-between text-slate-600">
+            <div className="space-y-1.5 rounded-xl border border-blue-200 bg-blue-50/70 p-3.5 text-xs">
+              <div className="flex justify-between gap-2 text-slate-600">
                 <span>DPP Setelah Diskon ({liveCalc.discountPct}%):</span>
-                <span className="font-mono font-semibold text-slate-900">
+                <span className="whitespace-nowrap font-mono font-semibold tabular-nums text-slate-900">
                   {formatMoney(liveCalc.netDpp, currency)}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between gap-2 text-slate-600">
                 <span>PPN ({liveCalc.ppnRate}%):</span>
-                <span className="font-mono font-semibold text-slate-900">
+                <span className="whitespace-nowrap font-mono font-semibold tabular-nums text-slate-900">
                   + {formatMoney(liveCalc.ppnAmount, currency)}
                 </span>
               </div>
-              <div className="flex justify-between border-t border-blue-200 pt-1.5 font-bold text-slate-900">
+              <div className="flex justify-between gap-2 border-t border-blue-200 pt-1.5 font-bold text-slate-900">
                 <span>Total Nilai Kontrak Bruto (Gross):</span>
-                <span className="font-mono text-blue-800">
+                <span className="whitespace-nowrap font-mono tabular-nums text-blue-800">
                   {formatMoney(liveCalc.grandTotalGross, currency)}
                 </span>
               </div>
-              <div className="flex justify-between text-slate-600">
+              <div className="flex justify-between gap-2 text-slate-600">
                 <span>Potongan PPh ({liveCalc.pphRate}%):</span>
-                <span className="font-mono text-rose-700">
+                <span className="whitespace-nowrap font-mono tabular-nums text-rose-700">
                   - {formatMoney(liveCalc.pphAmount, currency)}
                 </span>
               </div>
-              <div className="flex justify-between text-emerald-900 font-semibold">
+              <div className="flex justify-between gap-2 font-semibold text-emerald-900">
                 <span>Estimasi Kas Bersih Diterima:</span>
-                <span className="font-mono">{formatMoney(liveCalc.netCashReceivable, currency)}</span>
+                <span className="whitespace-nowrap font-mono tabular-nums">
+                  {formatMoney(liveCalc.netCashReceivable, currency)}
+                </span>
               </div>
-              <div className="mt-2 flex items-center justify-between rounded-lg bg-white px-2.5 py-1.5 border border-blue-200">
+              <div className="mt-2 flex items-center justify-between gap-2 rounded-lg border border-blue-200 bg-white px-2.5 py-1.5">
                 <span className="font-semibold text-slate-700">Jalur Otorisasi Wajib:</span>
-                <span className="rounded-md bg-blue-700 px-2 py-0.5 font-mono text-[11px] font-bold text-white">
+                <span className="whitespace-nowrap rounded-md bg-blue-700 px-2 py-0.5 font-mono text-[11px] font-bold text-white">
                   {liveCalc.requiredLevel === 0
                     ? 'Level 0 — Otomatis'
                     : liveCalc.requiredLevel === 1
@@ -473,24 +478,22 @@ export function AccountsKycContractsView({
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50"
+              className="h-10 w-full rounded-xl bg-blue-700 text-xs font-bold text-white shadow-sm hover:bg-blue-800 disabled:opacity-50"
             >
               {busy ? 'Memproses...' : 'Simpan Quotation & Jalankan Workflow Otorisasi'}
             </button>
           </form>
 
-          {/* Quotations & Multi-Tier Approval Queue */}
+          {/* Quotations & Multi-Tier Approval Queue (Fixes Frame 4 Price Wrapping!) */}
           <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-7">
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h3 className="text-sm font-bold text-slate-900">
-                  Daftar Quotation & Matriks Persetujuan Berjenjang (Level 0 – Level 3)
-                </h3>
-                <p className="text-xs text-slate-500">
-                  Wewenang peran aktif Anda ({activeRole.labelId}): Maksimal Persetujuan{' '}
-                  <strong>Level {activeRole.approvalMaxLevel}</strong>.
-                </p>
-              </div>
+            <div className="mb-4">
+              <h3 className="text-sm font-bold text-slate-900">
+                Daftar Quotation & Matriks Persetujuan Berjenjang (Level 0 – Level 3)
+              </h3>
+              <p className="text-xs text-slate-500">
+                Wewenang peran aktif Anda ({lang === 'ID' ? activeRole.labelId : activeRole.labelEn}): Maksimal Persetujuan{' '}
+                <strong>Level {activeRole.approvalMaxLevel}</strong>.
+              </p>
             </div>
 
             <div className="space-y-3">
@@ -504,14 +507,14 @@ export function AccountsKycContractsView({
                     key={q.id}
                     className="rounded-xl border border-slate-200 p-4 transition hover:border-slate-300"
                   >
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold text-blue-700">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="whitespace-nowrap font-mono text-xs font-bold text-blue-700">
                             {q.quote_number}
                           </span>
                           <span
-                            className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
+                            className={`whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                               q.approval_status === 'APPROVED' || q.approval_status === 'AUTO_APPROVED'
                                 ? 'bg-emerald-100 text-emerald-800'
                                 : q.approval_status === 'REJECTED'
@@ -525,11 +528,12 @@ export function AccountsKycContractsView({
                         <p className="mt-1 text-xs font-bold text-slate-900">{q.project_name}</p>
                         <p className="mt-0.5 text-xs text-slate-600">{q.boq_summary}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-mono text-sm font-extrabold text-slate-900">
+
+                      <div className="shrink-0 text-right">
+                        <p className="whitespace-nowrap font-mono text-sm font-extrabold tabular-nums text-slate-900">
                           {formatMoney(q.grand_total_gross, currency, true)}
                         </p>
-                        <p className="text-[11px] text-slate-500">
+                        <p className="whitespace-nowrap text-[11px] text-slate-500">
                           Diskon {q.discount_pct}% • PPN {q.ppn_rate}% • PPh {q.pph_rate}%
                         </p>
                       </div>
@@ -542,21 +546,16 @@ export function AccountsKycContractsView({
                       </span>
 
                       {isPending && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex shrink-0 items-center gap-2">
                           <button
                             type="button"
                             disabled={busy}
                             onClick={() => handleApproveQuote(q.id, 'APPROVED')}
-                            className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold ${
+                            className={`inline-flex items-center gap-1 whitespace-nowrap rounded-lg px-2.5 py-1 text-xs font-bold ${
                               canApproveThis
                                 ? 'bg-emerald-600 text-white hover:bg-emerald-700'
                                 : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
                             }`}
-                            title={
-                              canApproveThis
-                                ? 'Setujui pengajuan ini'
-                                : `Ganti peran ke minimal Level ${q.required_approval_level} untuk menyetujui`
-                            }
                           >
                             <CheckCircle2 className="h-3.5 w-3.5" />
                             Approve L{q.required_approval_level}
@@ -565,7 +564,7 @@ export function AccountsKycContractsView({
                             type="button"
                             disabled={busy}
                             onClick={() => handleApproveQuote(q.id, 'REJECTED')}
-                            className="inline-flex items-center gap-1 rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
+                            className="inline-flex items-center gap-1 whitespace-nowrap rounded-lg border border-rose-300 bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 hover:bg-rose-100"
                           >
                             <XCircle className="h-3.5 w-3.5" />
                             Tolak
@@ -581,19 +580,21 @@ export function AccountsKycContractsView({
         </div>
       )}
 
-      {/* SUBTAB 2: KYC VAULT & UU PDP MASKING */}
+      {/* SUBTAB 2: KYC VAULT & UU PDP MASKING (Fixes Frame 5 16-Digit Clipping & Select Height!) */}
       {subTab === 'kyc' && (
         <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
           <form
             onSubmit={handleCreateAccount}
             className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5"
           >
-            <h3 className="text-sm font-bold text-slate-900">
-              Registrasi Entitas Klien & Dokumen KYC Indonesia
-            </h3>
-            <p className="text-xs text-slate-500">
-              Validasi ketat NIK 16 digit, NPWP 16 digit (Coretax), NIB OSS 13 digit & Consent UU PDP.
-            </p>
+            <div>
+              <h3 className="text-sm font-bold text-slate-900">
+                Registrasi Entitas Klien & Dokumen KYC Indonesia
+              </h3>
+              <p className="mt-0.5 text-xs text-slate-500">
+                Validasi ketat NIK 16 digit, NPWP 16 digit (Coretax), NIB OSS 13 digit & Consent UU PDP.
+              </p>
+            </div>
 
             <div>
               <label className="block text-xs font-semibold text-slate-700">Nama Badan Hukum / Klien</label>
@@ -603,7 +604,7 @@ export function AccountsKycContractsView({
                 value={entityName}
                 onChange={(e) => setEntityName(e.target.value)}
                 placeholder="PT Contoh Karya Infrastruktur Tbk"
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
               />
             </div>
 
@@ -613,11 +614,11 @@ export function AccountsKycContractsView({
                 <select
                   value={accountType}
                   onChange={(e) => setAccountType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                 >
-                  <option value="BUMN_KORPORASI">BUMN / Anak Usaha BUMN</option>
-                  <option value="SWASTA_TBK">Korporasi Publik (Tbk) / Swasta</option>
-                  <option value="INDIVIDU_HNWI">Individu / Investor Kawasan</option>
+                  <option value="BUMN_KORPORASI">BUMN / Anak Usaha</option>
+                  <option value="SWASTA_TBK">Korporasi Tbk / Swasta</option>
+                  <option value="INDIVIDU_HNWI">Investor Individu</option>
                 </select>
               </div>
               <div>
@@ -626,7 +627,7 @@ export function AccountsKycContractsView({
                   type="text"
                   value={industrySector}
                   onChange={(e) => setIndustrySector(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                 />
               </div>
             </div>
@@ -640,7 +641,7 @@ export function AccountsKycContractsView({
                   value={picName}
                   onChange={(e) => setPicName(e.target.value)}
                   placeholder="Ir. Budi Hartono"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                 />
               </div>
               <div>
@@ -651,14 +652,15 @@ export function AccountsKycContractsView({
                   value={picEmail}
                   onChange={(e) => setPicEmail(e.target.value)}
                   placeholder="budi@korporasi.co.id"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2.5">
+            {/* Spacious 2-Column 16-Digit Inputs (No Horizontal Clipping!) */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700">NIK (16 Digit)</label>
+                <label className="block text-xs font-semibold text-slate-700">NIK Pengurus (16 Digit)</label>
                 <input
                   type="text"
                   required
@@ -666,11 +668,11 @@ export function AccountsKycContractsView({
                   value={nik16}
                   onChange={(e) => setNik16(e.target.value.replace(/\D/g, ''))}
                   placeholder="3174010101800001"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-2.5 py-2 font-mono text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700">NPWP (16 Digit)</label>
+                <label className="block text-xs font-semibold text-slate-700">NPWP Coretax (16 Digit)</label>
                 <input
                   type="text"
                   required
@@ -678,11 +680,14 @@ export function AccountsKycContractsView({
                   value={npwp16}
                   onChange={(e) => setNpwp16(e.target.value.replace(/\D/g, ''))}
                   placeholder="0123456789010000"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-2.5 py-2 font-mono text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-700">NIB OSS (13 Digit)</label>
+                <label className="block text-xs font-semibold text-slate-700">NIB OSS (13 Digit)</label>
                 <input
                   type="text"
                   required
@@ -690,28 +695,20 @@ export function AccountsKycContractsView({
                   value={nib13}
                   onChange={(e) => setNib13(e.target.value.replace(/\D/g, ''))}
                   placeholder="9120304050607"
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-2.5 py-2 font-mono text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700">Telepon / WhatsApp</label>
-                <input
-                  type="text"
-                  value={picPhone}
-                  onChange={(e) => setPicPhone(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Domisili & Zona Waktu</label>
+                <label className="block text-xs font-semibold text-slate-700">Telepon / Domisili</label>
                 <input
                   type="text"
-                  value={cityProvince}
-                  onChange={(e) => setCityProvince(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+                  value={`${picPhone} • ${cityProvince}`}
+                  onChange={(e) => {
+                    const parts = e.target.value.split('•');
+                    setPicPhone((parts[0] || '').trim());
+                    if (parts[1]) setCityProvince(parts[1].trim());
+                  }}
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
                 />
               </div>
             </div>
@@ -724,14 +721,14 @@ export function AccountsKycContractsView({
                 className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600"
               />
               <span>
-                <strong>Explicit Consent UU No. 27/2022 (UU PDP):</strong> Subjek data telah menyetujui pemrosesan NIK, NPWP, dan dokumen legal untuk keperluan kontrak & perpajakan.
+                <strong>Explicit Consent UU No. 27/2022 (UU PDP):</strong> Subjek data menyetujui pemrosesan NIK, NPWP, dan NIB untuk administrasi kontrak & perpajakan.
               </span>
             </label>
 
             <button
               type="submit"
               disabled={busy}
-              className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
+              className="h-10 w-full rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
             >
               Simpan ke Brankas KYC Terenkripsi
             </button>
@@ -742,7 +739,7 @@ export function AccountsKycContractsView({
               Daftar Akun Korporasi & Status Verifikasi KYC
             </h3>
             <p className="mb-4 text-xs text-slate-500">
-              Beralihlah ke peran <strong>Legal, Tax & Finance</strong> atau <strong>Direksi</strong> pada pengalih peran di bagian atas layar untuk membuka masking NIK/NPWP dan memvalidasi KYC.
+              Beralihlah ke peran <strong>Legal, Tax & Finance</strong> atau <strong>Direksi</strong> pada pengalih peran di atas untuk membuka masking NIK/NPWP.
             </p>
 
             <div className="overflow-x-auto">
@@ -750,10 +747,10 @@ export function AccountsKycContractsView({
                 <thead>
                   <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
                     <th className="pb-2.5 pr-3">Kode & Entitas</th>
-                    <th className="pb-2.5 pr-3">NIK & NPWP 16 Digit</th>
-                    <th className="pb-2.5 pr-3">NIB OSS</th>
-                    <th className="pb-2.5 pr-3">Status KYC</th>
-                    <th className="pb-2.5 text-right">Tindakan Legal</th>
+                    <th className="whitespace-nowrap pb-2.5 pr-3">Identitas Pajak & NIK</th>
+                    <th className="whitespace-nowrap pb-2.5 pr-3">NIB OSS</th>
+                    <th className="whitespace-nowrap pb-2.5 pr-3">Status KYC</th>
+                    <th className="whitespace-nowrap pb-2.5 text-right">Otorisasi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -768,12 +765,18 @@ export function AccountsKycContractsView({
                           {acc.pic_name} • {acc.city_province}
                         </div>
                       </td>
-                      <td className="py-3 pr-3 font-mono text-[11px]">
-                        <div>NIK: {acc.nik_display}</div>
-                        <div className="text-slate-600">NPWP: {acc.npwp_display}</div>
+                      <td className="whitespace-nowrap py-3 pr-3 font-mono text-[11px] tabular-nums">
+                        <div>
+                          <span className="text-slate-400">NIK:</span> {acc.nik_display}
+                        </div>
+                        <div className="text-slate-700">
+                          <span className="text-slate-400">NPWP:</span> {acc.npwp_display}
+                        </div>
                       </td>
-                      <td className="py-3 pr-3 font-mono text-[11px] text-slate-700">{acc.nib_13}</td>
-                      <td className="py-3 pr-3">
+                      <td className="whitespace-nowrap py-3 pr-3 font-mono text-[11px] tabular-nums text-slate-700">
+                        {acc.nib_13}
+                      </td>
+                      <td className="whitespace-nowrap py-3 pr-3">
                         <span
                           className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                             acc.kyc_status === 'VERIFIED'
@@ -786,18 +789,18 @@ export function AccountsKycContractsView({
                           {acc.kyc_status}
                         </span>
                       </td>
-                      <td className="py-3 text-right">
+                      <td className="whitespace-nowrap py-3 text-right">
                         {acc.kyc_status !== 'VERIFIED' ? (
                           <button
                             type="button"
                             disabled={busy}
                             onClick={() => handleVerifyKyc(acc.id, 'VERIFIED')}
-                            className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
+                            className="whitespace-nowrap rounded-lg bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-emerald-700"
                           >
                             Verifikasi KYC
                           </button>
                         ) : (
-                          <span className="text-[11px] text-slate-400">Tervalidasi</span>
+                          <span className="text-[11px] font-medium text-slate-400">Tervalidasi</span>
                         )}
                       </td>
                     </tr>
@@ -817,13 +820,13 @@ export function AccountsKycContractsView({
             className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5"
           >
             <div className="flex items-center gap-2">
-              <Stamp className="h-5 w-5 text-blue-700" />
+              <Stamp className="h-5 w-5 shrink-0 text-blue-700" />
               <h3 className="text-sm font-bold text-slate-900">
                 Penerbitan SPK / Kontrak EPC / PPJB + e-Meterai PERURI
               </h3>
             </div>
             <p className="text-xs text-slate-500">
-              Hanya Quotation berstatus <strong>APPROVED</strong> dengan klien <strong>KYC VERIFIED</strong> yang dapat diterbitkan menjadi kontrak sah dan memicu tagihan DP 20% otomatis.
+              Quotation berstatus <strong>APPROVED</strong> dengan klien <strong>KYC VERIFIED</strong> diterbitkan menjadi kontrak sah dan memicu tagihan DP 20% otomatis.
             </p>
 
             <div>
@@ -833,7 +836,7 @@ export function AccountsKycContractsView({
               <select
                 value={selectedQuoteId}
                 onChange={(e) => setSelectedQuoteId(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs"
               >
                 {approvedQuotesWithoutContract.length === 0 ? (
                   <option value="">(Semua Quotation APPROVED sudah memiliki Kontrak)</option>
@@ -849,27 +852,27 @@ export function AccountsKycContractsView({
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Jenis Instrumen Hukum</label>
+                <label className="block text-xs font-semibold text-slate-700">Instrumen Hukum</label>
                 <select
                   value={contractType}
                   onChange={(e) => setContractType(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                 >
-                  <option value="KONTRAK_EPC">Kontrak Induk EPC (FIDIC/LPJK)</option>
-                  <option value="SPK_PENGADAAN">Surat Perintah Kerja (SPK)</option>
-                  <option value="PPJB_NOTARIS">PPJB Kawasan / Properti MPC</option>
+                  <option value="KONTRAK_EPC">Kontrak EPC (FIDIC)</option>
+                  <option value="SPK_PENGADAAN">SPK Pengadaan</option>
+                  <option value="PPJB_NOTARIS">PPJB Kawasan MPC</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-slate-700">Penyelenggara TTE PSrE</label>
+                <label className="block text-xs font-semibold text-slate-700">Provider TTE PSrE</label>
                 <select
                   value={psreProvider}
                   onChange={(e) => setPsreProvider(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                  className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
                 >
-                  <option value="PERURI_SIGN">Peruri Sign (PSrE BUMN)</option>
-                  <option value="PRIVY_ID">PrivyID (PSrE Komdigi)</option>
-                  <option value="VIDA_SIGN">VIDA Sign (PSrE Komdigi)</option>
+                  <option value="PERURI_SIGN">Peruri Sign</option>
+                  <option value="PRIVY_ID">PrivyID</option>
+                  <option value="VIDA_SIGN">VIDA Sign</option>
                 </select>
               </div>
             </div>
@@ -877,7 +880,7 @@ export function AccountsKycContractsView({
             <button
               type="submit"
               disabled={busy || approvedQuotesWithoutContract.length === 0}
-              className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
+              className="h-10 w-full rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
             >
               Bubuhkan e-Meterai Rp10.000 & Terbitkan Kontrak Digital
             </button>
@@ -890,26 +893,26 @@ export function AccountsKycContractsView({
             <div className="space-y-3">
               {(data.contracts || []).map((c: any) => (
                 <div key={c.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
                       <span className="font-mono text-xs font-bold text-blue-700">
                         {c.contract_number}
                       </span>
                       <h4 className="mt-0.5 text-xs font-bold text-slate-900">{c.project_name}</h4>
                       <p className="text-[11px] text-slate-500">{c.account_name}</p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-mono text-sm font-extrabold text-slate-900">
+                    <div className="shrink-0 text-right">
+                      <p className="whitespace-nowrap font-mono text-sm font-extrabold tabular-nums text-slate-900">
                         {formatMoney(c.contract_value, currency, true)}
                       </p>
-                      <span className="inline-flex rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
+                      <span className="mt-0.5 inline-flex whitespace-nowrap rounded-full bg-emerald-100 px-2.5 py-0.5 text-[10px] font-bold text-emerald-800">
                         {c.sign_status} • {c.psre_provider}
                       </span>
                     </div>
                   </div>
                   <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 font-mono text-[11px] text-slate-600">
                     <span>e-Meterai: {c.emeterai_serial}</span>
-                    <span>Retensi Jaminan Pemeliharaan: {c.retention_pct}%</span>
+                    <span>Retensi Jaminan: {c.retention_pct}%</span>
                   </div>
                 </div>
               ))}
@@ -1006,19 +1009,17 @@ export function BillingAndBastView({
 
   return (
     <div className="space-y-6">
-      {/* Milestone Billing Table */}
+      {/* Milestone Billing Table (Fixes Frame 6 Wrapping!) */}
       <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Receipt className="h-5 w-5 text-blue-700" />
-            <div>
-              <h3 className="text-sm font-bold text-slate-900">
-                Jadwal Penagihan Termin (Monthly Certificate / Angsuran) & Rekonsiliasi VA SNAP BI
-              </h3>
-              <p className="text-xs text-slate-500">
-                Sinkronisasi otomatis nomor dokumen jurnal piutang SAP S/4HANA FI & potongan pajak PPN/PPh.
-              </p>
-            </div>
+        <div className="mb-4 flex items-center gap-2.5">
+          <Receipt className="h-5 w-5 shrink-0 text-blue-700" />
+          <div>
+            <h3 className="text-sm font-bold text-slate-900">
+              Jadwal Penagihan Termin (Monthly Certificate / Angsuran) & Rekonsiliasi VA SNAP BI
+            </h3>
+            <p className="text-xs text-slate-500">
+              Sinkronisasi otomatis nomor dokumen jurnal piutang SAP S/4HANA FI & potongan pajak PPN/PPh.
+            </p>
           </div>
         </div>
 
@@ -1026,39 +1027,41 @@ export function BillingAndBastView({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] uppercase tracking-wider text-slate-500">
-                <th className="pb-2.5 pr-3">No. Invoice & ERP Ref</th>
-                <th className="pb-2.5 pr-3">Proyek & Termin</th>
-                <th className="pb-2.5 pr-3">Virtual Account SNAP BI</th>
-                <th className="pb-2.5 pr-3">Total Tagihan (Inc. PPN)</th>
-                <th className="pb-2.5 pr-3">Jatuh Tempo</th>
-                <th className="pb-2.5 pr-3">Status</th>
-                <th className="pb-2.5 text-right">Rekonsiliasi</th>
+                <th className="whitespace-nowrap pb-2.5 pr-4">Invoice & ERP</th>
+                <th className="pb-2.5 pr-4">Proyek & Termin</th>
+                <th className="whitespace-nowrap pb-2.5 pr-4">VA SNAP BI</th>
+                <th className="whitespace-nowrap pb-2.5 pr-4">Nilai Tagihan</th>
+                <th className="whitespace-nowrap pb-2.5 pr-4">Jatuh Tempo</th>
+                <th className="whitespace-nowrap pb-2.5 pr-4">Status</th>
+                <th className="whitespace-nowrap pb-2.5 text-right">Rekonsiliasi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {(data.billings || []).map((b: any) => (
                 <tr key={b.id} className="hover:bg-slate-50">
-                  <td className="py-3 pr-3">
+                  <td className="whitespace-nowrap py-3 pr-4">
                     <div className="font-mono font-bold text-blue-700">{b.invoice_number}</div>
                     <div className="font-mono text-[11px] text-slate-500">{b.erp_sync_ref}</div>
                   </td>
-                  <td className="py-3 pr-3">
+                  <td className="py-3 pr-4">
                     <div className="font-bold text-slate-900">{b.term_name}</div>
                     <div className="text-[11px] text-slate-500">{b.project_name}</div>
                   </td>
-                  <td className="py-3 pr-3 font-mono text-[11px] text-slate-700">{b.snap_va_number}</td>
-                  <td className="py-3 pr-3">
-                    <div className="font-mono font-bold text-slate-900">
+                  <td className="whitespace-nowrap py-3 pr-4 font-mono text-[11px] tabular-nums text-slate-700">
+                    {b.snap_va_number}
+                  </td>
+                  <td className="whitespace-nowrap py-3 pr-4">
+                    <div className="font-mono font-bold tabular-nums text-slate-900">
                       {formatMoney(b.total_invoice, currency)}
                     </div>
                     <div className="text-[10px] text-slate-500">
                       PPh Dipotong: {formatMoney(b.pph_withheld, currency, true)}
                     </div>
                   </td>
-                  <td className="py-3 pr-3 font-mono text-[11px] text-slate-700">
+                  <td className="whitespace-nowrap py-3 pr-4 font-mono text-[11px] tabular-nums text-slate-700">
                     {String(b.due_date).slice(0, 10)}
                   </td>
-                  <td className="py-3 pr-3">
+                  <td className="whitespace-nowrap py-3 pr-4">
                     <span
                       className={`inline-flex rounded-full px-2.5 py-0.5 text-[11px] font-bold ${
                         b.payment_status === 'PAID'
@@ -1071,13 +1074,13 @@ export function BillingAndBastView({
                       {b.payment_status}
                     </span>
                   </td>
-                  <td className="py-3 text-right">
+                  <td className="whitespace-nowrap py-3 text-right">
                     {b.payment_status !== 'PAID' ? (
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => handleReconcilePaid(b.id)}
-                        className="rounded-lg bg-blue-700 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-blue-800"
+                        className="whitespace-nowrap rounded-lg bg-blue-700 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-blue-800"
                       >
                         Tandai PAID
                       </button>
@@ -1099,13 +1102,13 @@ export function BillingAndBastView({
           className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-5"
         >
           <div className="flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-emerald-700" />
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-emerald-700" />
             <h3 className="text-sm font-bold text-slate-900">
               Inspeksi Lapangan & Penerbitan BAST Digital (Geotag)
             </h3>
           </div>
           <p className="text-xs text-slate-500">
-            Dapat diakses oleh <strong>Project Manager</strong> atau <strong>Direksi</strong> menggunakan tablet/ponsel di lokasi proyek.
+            Responsif untuk tablet/ponsel lapangan bagi <strong>Project Manager</strong> atau <strong>Direksi</strong>.
           </p>
 
           <div>
@@ -1113,7 +1116,7 @@ export function BillingAndBastView({
             <select
               value={dealId}
               onChange={(e) => setDealId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+              className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs"
             >
               {(data.deals || []).map((d: any) => (
                 <option key={d.id} value={d.id}>
@@ -1133,14 +1136,14 @@ export function BillingAndBastView({
               value={clientRepName}
               onChange={(e) => setClientRepName(e.target.value)}
               placeholder="Contoh: Dr. Kevin Tanoto (Chief Infrastructure Officer)"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700">
-                Skor Checklist Lulus (Dari 25)
+                Checklist Lulus (Maks 25)
               </label>
               <input
                 type="number"
@@ -1148,19 +1151,19 @@ export function BillingAndBastView({
                 max={25}
                 value={checklistPassed}
                 onChange={(e) => setChecklistPassed(Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-mono text-xs"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 font-mono text-xs tabular-nums"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-slate-700">Masa Retensi / Garansi</label>
+              <label className="block text-xs font-semibold text-slate-700">Masa Retensi</label>
               <select
                 value={retentionDays}
                 onChange={(e) => setRetentionDays(Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
               >
-                <option value={90}>90 Hari Kalender (3 Bulan)</option>
-                <option value={180}>180 Hari Kalender (6 Bulan Standar EPC)</option>
-                <option value={365}>365 Hari Kalender (12 Bulan Struktur)</option>
+                <option value={90}>90 Hari (3 Bulan)</option>
+                <option value={180}>180 Hari (Standar EPC)</option>
+                <option value={365}>365 Hari (12 Bulan)</option>
               </select>
             </div>
           </div>
@@ -1180,24 +1183,24 @@ export function BillingAndBastView({
               type="text"
               value={geotagCoords}
               onChange={(e) => setGeotagCoords(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 font-mono text-xs"
+              className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 font-mono text-xs"
             />
           </div>
 
           <div>
             <label className="block text-xs font-semibold text-slate-700">Catatan Inspeksi Bersama</label>
             <textarea
-              rows={2}
+              rows={3}
               value={defectNotes}
               onChange={(e) => setDefectNotes(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs leading-relaxed"
             />
           </div>
 
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-xl bg-emerald-700 py-2.5 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
+            className="h-10 w-full rounded-xl bg-emerald-700 text-xs font-bold text-white hover:bg-emerald-800 disabled:opacity-50"
           >
             Terbitkan BAST Digital Bertanda Tangan PSrE
           </button>
@@ -1210,15 +1213,15 @@ export function BillingAndBastView({
           <div className="space-y-3">
             {(data.bastRecords || []).map((r: any) => (
               <div key={r.id} className="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4">
-                <div className="flex flex-wrap items-start justify-between gap-2">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
                     <span className="font-mono text-xs font-bold text-emerald-800">
                       {r.bast_number}
                     </span>
                     <h4 className="mt-0.5 text-xs font-bold text-slate-900">{r.project_name}</h4>
                     <p className="mt-1 text-xs text-slate-600">{r.defect_notes}</p>
                   </div>
-                  <span className="rounded-full bg-emerald-700 px-2.5 py-0.5 text-[11px] font-bold text-white">
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-emerald-700 px-2.5 py-0.5 text-[11px] font-bold text-white">
                     Checklist {r.checklist_passed}/{r.checklist_total} LULUS
                   </span>
                 </div>
@@ -1229,7 +1232,7 @@ export function BillingAndBastView({
                   <div className="font-mono">
                     <strong>Geotag:</strong> {r.geotag_coords}
                   </div>
-                  <div>
+                  <div className="whitespace-nowrap">
                     <strong>Akhir Retensi ({r.retention_days}h):</strong>{' '}
                     <span className="font-mono font-bold text-emerald-900">
                       {String(r.retention_end_date).slice(0, 10)}
@@ -1310,13 +1313,13 @@ export function SlaAndGovernanceView({
   return (
     <div className="space-y-6">
       {/* ITIL v4 SLA Ticketing */}
-      <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">
+      <div className="grid grid-cols-1 items-start gap-6 xl:grid-cols-12">
         <form
           onSubmit={handleCreateTicket}
           className="space-y-3.5 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm xl:col-span-4"
         >
           <div className="flex items-center gap-2">
-            <LifeBuoy className="h-5 w-5 text-blue-700" />
+            <LifeBuoy className="h-5 w-5 shrink-0 text-blue-700" />
             <h3 className="text-sm font-bold text-slate-900">
               Helpdesk Masa Retensi & SLA (ITIL v4)
             </h3>
@@ -1326,7 +1329,7 @@ export function SlaAndGovernanceView({
             <select
               value={dealId}
               onChange={(e) => setDealId(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+              className="mt-1 h-10 w-full truncate rounded-xl border border-slate-300 bg-white px-3 text-xs"
             >
               {(data.deals || []).map((d: any) => (
                 <option key={d.id} value={d.id}>
@@ -1343,7 +1346,7 @@ export function SlaAndGovernanceView({
               value={reporterName}
               onChange={(e) => setReporterName(e.target.value)}
               placeholder="Kepala Operasi Fasilitas"
-              className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 text-xs"
+              className="mt-1 h-10 w-full rounded-xl border border-slate-300 px-3 text-xs"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1352,11 +1355,11 @@ export function SlaAndGovernanceView({
               <select
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
               >
-                <option value="MEP_ELECTRICAL">MEP & Kelistrikan</option>
+                <option value="MEP_ELECTRICAL">MEP & Listrik</option>
                 <option value="STRUCTURAL_CIVIL">Sipil & Struktur</option>
-                <option value="HVAC_PIPING">Perpipaan & HVAC</option>
+                <option value="HVAC_PIPING">Pipa & HVAC</option>
                 <option value="DOCUMENT_ADMIN">Dokumen As-Built</option>
               </select>
             </div>
@@ -1365,12 +1368,12 @@ export function SlaAndGovernanceView({
               <select
                 value={priority}
                 onChange={(e) => setPriority(e.target.value)}
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs"
+                className="mt-1 h-10 w-full rounded-xl border border-slate-300 bg-white px-3 text-xs"
               >
-                <option value="CRITICAL">CRITICAL (SLA 4 Jam)</option>
-                <option value="HIGH">HIGH (SLA 8 Jam)</option>
-                <option value="MEDIUM">MEDIUM (SLA 16 Jam)</option>
-                <option value="LOW">LOW (SLA 24 Jam)</option>
+                <option value="CRITICAL">CRITICAL (4j)</option>
+                <option value="HIGH">HIGH (8j)</option>
+                <option value="MEDIUM">MEDIUM (16j)</option>
+                <option value="LOW">LOW (24j)</option>
               </select>
             </div>
           </div>
@@ -1388,7 +1391,7 @@ export function SlaAndGovernanceView({
           <button
             type="submit"
             disabled={busy}
-            className="w-full rounded-xl bg-blue-700 py-2.5 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
+            className="h-10 w-full rounded-xl bg-blue-700 text-xs font-bold text-white hover:bg-blue-800 disabled:opacity-50"
           >
             Buka Tiket Komplain Ber-SLA
           </button>
@@ -1403,9 +1406,9 @@ export function SlaAndGovernanceView({
               const sla = getSlaRemainingLabel(t.sla_deadline, t.status, lang);
               return (
                 <div key={t.id} className="rounded-xl border border-slate-200 p-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
                         <span className="font-mono text-xs font-bold text-blue-700">
                           {t.ticket_number}
                         </span>
@@ -1418,9 +1421,9 @@ export function SlaAndGovernanceView({
                         {t.project_name} • Pelapor: {t.reporter_name}
                       </p>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <span
-                        className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${
+                        className={`inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-bold ${
                           sla.tone === 'ok'
                             ? 'bg-emerald-100 text-emerald-800'
                             : sla.tone === 'warn'
@@ -1436,7 +1439,7 @@ export function SlaAndGovernanceView({
                           type="button"
                           disabled={busy}
                           onClick={() => handleResolveTicket(t.id)}
-                          className="rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
+                          className="whitespace-nowrap rounded-lg bg-emerald-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-emerald-700"
                         >
                           Resolve
                         </button>
@@ -1459,13 +1462,13 @@ export function SlaAndGovernanceView({
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-[11px] uppercase text-slate-500">
-                <th className="pb-2 pr-3">Kode Peran</th>
+                <th className="whitespace-nowrap pb-2 pr-3">Kode Peran</th>
                 <th className="pb-2 pr-3">Pejabat Simulasi</th>
-                <th className="pb-2 pr-3">Level Approval</th>
-                <th className="pb-2 pr-3">Buka Masking UU PDP</th>
-                <th className="pb-2 pr-3">Validasi KYC & Pajak</th>
-                <th className="pb-2 pr-3">Terbit Kontrak PSrE</th>
-                <th className="pb-2">Terbit BAST Digital</th>
+                <th className="whitespace-nowrap pb-2 pr-3">Approval</th>
+                <th className="whitespace-nowrap pb-2 pr-3">UU PDP</th>
+                <th className="whitespace-nowrap pb-2 pr-3">Validasi KYC</th>
+                <th className="whitespace-nowrap pb-2 pr-3">Kontrak PSrE</th>
+                <th className="whitespace-nowrap pb-2">BAST Digital</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -1473,13 +1476,17 @@ export function SlaAndGovernanceView({
                 const rp = ROLE_PROFILES[rk];
                 return (
                   <tr key={rk} className={rk === activeRole.role ? 'bg-blue-50/70 font-semibold' : ''}>
-                    <td className="py-2 pr-3 font-mono text-[11px] text-blue-700">{rp.role}</td>
+                    <td className="whitespace-nowrap py-2 pr-3 font-mono text-[11px] text-blue-700">
+                      {rp.role}
+                    </td>
                     <td className="py-2 pr-3">{rp.actorName}</td>
-                    <td className="py-2 pr-3">Level {rp.approvalMaxLevel}</td>
-                    <td className="py-2 pr-3">{rp.canViewUnmaskedKyc ? 'Ya (Penuh)' : 'Ter-masking'}</td>
-                    <td className="py-2 pr-3">{rp.canVerifyKyc ? 'Otorisasi Aktif' : '-'}</td>
-                    <td className="py-2 pr-3">{rp.canIssueContract ? 'Otorisasi Aktif' : '-'}</td>
-                    <td className="py-2">{rp.canIssueBast ? 'Otorisasi Aktif' : '-'}</td>
+                    <td className="whitespace-nowrap py-2 pr-3">Level {rp.approvalMaxLevel}</td>
+                    <td className="whitespace-nowrap py-2 pr-3">
+                      {rp.canViewUnmaskedKyc ? 'Penuh' : 'Ter-masking'}
+                    </td>
+                    <td className="whitespace-nowrap py-2 pr-3">{rp.canVerifyKyc ? 'Aktif' : '-'}</td>
+                    <td className="whitespace-nowrap py-2 pr-3">{rp.canIssueContract ? 'Aktif' : '-'}</td>
+                    <td className="whitespace-nowrap py-2">{rp.canIssueBast ? 'Aktif' : '-'}</td>
                   </tr>
                 );
               })}
@@ -1490,9 +1497,9 @@ export function SlaAndGovernanceView({
 
       {/* Immutable Audit Trail */}
       <div className="rounded-2xl border border-slate-200 bg-slate-950 p-5 text-slate-100 shadow-sm">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <History className="h-5 w-5 text-emerald-400" />
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <History className="h-5 w-5 shrink-0 text-emerald-400" />
             <div>
               <h3 className="text-sm font-bold text-white">
                 Immutable Audit Trail — Pemeriksaan SPI, KAP & Auditor ISO/IEC 27001
@@ -1502,34 +1509,34 @@ export function SlaAndGovernanceView({
               </p>
             </div>
           </div>
-          <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-300">
+          <span className="shrink-0 whitespace-nowrap rounded-full border border-emerald-500/40 bg-emerald-500/10 px-3 py-1 font-mono text-[11px] font-bold text-emerald-300">
             ZERO AUDIT FINDING READY
           </span>
         </div>
 
-        <div className="max-h-96 overflow-y-auto rounded-xl border border-slate-800">
+        <div className="max-h-96 overflow-x-auto overflow-y-auto rounded-xl border border-slate-800">
           <table className="w-full text-left text-xs">
             <thead className="sticky top-0 bg-slate-900 text-[11px] uppercase text-slate-400">
               <tr>
-                <th className="px-3 py-2.5">Waktu (WIB) & Hash</th>
-                <th className="px-3 py-2.5">Aktor & Peran</th>
-                <th className="px-3 py-2.5">Aksi & Entitas</th>
+                <th className="whitespace-nowrap px-3 py-2.5">Waktu & Hash</th>
+                <th className="whitespace-nowrap px-3 py-2.5">Aktor & Peran</th>
+                <th className="whitespace-nowrap px-3 py-2.5">Aksi & Entitas</th>
                 <th className="px-3 py-2.5">Rincian Perubahan (Old → New)</th>
-                <th className="px-3 py-2.5">IP Address</th>
+                <th className="whitespace-nowrap px-3 py-2.5">IP Address</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-800/80 font-mono text-[11px]">
               {(data.auditLogs || []).map((log: any) => (
                 <tr key={log.id} className="hover:bg-slate-900/60">
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-3 py-2.5">
                     <div className="text-slate-200">{formatDateTimeId(log.created_at)}</div>
                     <div className="text-[10px] text-emerald-400">{log.log_hash}</div>
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-3 py-2.5">
                     <div className="font-sans font-semibold text-white">{log.actor_name}</div>
                     <div className="text-[10px] text-blue-400">{log.actor_role}</div>
                   </td>
-                  <td className="px-3 py-2.5">
+                  <td className="whitespace-nowrap px-3 py-2.5">
                     <span className="rounded bg-slate-800 px-1.5 py-0.5 text-amber-300">
                       {log.action_type}
                     </span>
@@ -1544,7 +1551,7 @@ export function SlaAndGovernanceView({
                       </div>
                     )}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-400">{log.ip_address}</td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-slate-400">{log.ip_address}</td>
                 </tr>
               ))}
             </tbody>
